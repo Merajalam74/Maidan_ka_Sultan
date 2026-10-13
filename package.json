@@ -1,0 +1,30 @@
+{
+  "name": "campus-premier-league-auction",
+  "version": "1.0.0",
+  "description": "Campus Premier League — Production-Ready Live Cricket Player Auction Platform",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "test": "npm --prefix server test",
+    "seed": "npm --prefix server run seed",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "cricket-auction",
+    "live-bidding",
+    "socketio",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "ISC"
+}
