@@ -146,7 +146,7 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
                     <Sparkles className="w-3.5 h-3.5" />
                     Current Bid
                   </span>
-                  {leadingTeam && (
+                  {(session?.currentBid > 0 && (leadingTeam || session?.leadingTeam || session?.leadingTeamId)) && (
                     <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                       Leading
                     </span>
@@ -164,17 +164,29 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
                 </motion.div>
 
                 {/* Leading Team Display */}
-                {leadingTeam ? (
-                  <div className="mt-2 flex items-center gap-2 pt-2 border-t border-cpl-border/60">
-                    {leadingTeam.logoUrl && (
-                      <img
-                        src={leadingTeam.logoUrl}
-                        alt={leadingTeam.name}
-                        className="w-5 h-5 rounded-full object-cover"
-                      />
-                    )}
-                    <span className="text-xs font-bold text-cpl-gold truncate">{leadingTeam.name}</span>
-                  </div>
+                {session?.currentBid > 0 && (leadingTeam || session?.leadingTeam || session?.leadingTeamId) ? (
+                  (() => {
+                    const activeTeam = leadingTeam || session?.leadingTeam || session?.leadingTeamId;
+                    return (
+                      <div className="mt-2 flex items-center gap-2 pt-2 border-t border-cpl-border/60">
+                        {activeTeam.logoUrl ? (
+                          <img
+                            src={activeTeam.logoUrl}
+                            alt={activeTeam.name}
+                            className="w-5 h-5 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-cpl-gold/20 text-cpl-gold text-[9px] font-black flex items-center justify-center shrink-0">
+                            {activeTeam.shortCode || 'TM'}
+                          </div>
+                        )}
+                        <span className="text-xs font-bold text-cpl-gold truncate">{activeTeam.name}</span>
+                        {activeTeam.shortCode && (
+                          <span className="text-[10px] text-slate-400 font-semibold">({activeTeam.shortCode})</span>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="mt-2 text-[11px] text-slate-500 pt-2 border-t border-cpl-border/60">
                     Awaiting opening bid (min: {formatINR(player.basePrice)})

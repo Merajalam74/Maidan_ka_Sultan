@@ -87,38 +87,7 @@ export default function AuctioneerControlBar({ onOpenNominationModal }) {
             <span>Nominate Player</span>
           </button>
 
-          {/* Pause / Resume Timer */}
-          {isActive ? (
-            <button
-              onClick={() => handleAction(pause, 'Pause')}
-              disabled={busy || !currentPlayer}
-              className="px-3.5 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center gap-1.5"
-            >
-              <Pause className="w-3.5 h-3.5" />
-              <span>Pause</span>
-            </button>
-          ) : isPaused ? (
-            <button
-              onClick={() => handleAction(resume, 'Resume')}
-              disabled={busy}
-              className="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center gap-1.5"
-            >
-              <Play className="w-3.5 h-3.5" />
-              <span>Resume</span>
-            </button>
-          ) : null}
-
-          {/* Reset Timer (+30s) */}
-          <button
-            onClick={() => handleAction(() => resetTimer(30), 'Reset Timer')}
-            disabled={busy || !currentPlayer}
-            className="px-3.5 py-2 rounded-xl bg-cpl-surface border border-cpl-border text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center gap-1.5"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset 30s</span>
-          </button>
-
-          {/* Mark SOLD (with confirmation modal if big purchase) */}
+          {/* Mark SOLD (with confirmation modal) */}
           <button
             onClick={() => {
               if (!hasLeadingBid) {

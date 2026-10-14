@@ -64,14 +64,18 @@ export function AuctionSocketProvider({ children }) {
 
     const onAuctionState = (data) => {
       if (data.session) {
-        setSession(data.session);
+        const sess = {
+          ...data.session,
+          leadingTeam: data.session.leadingTeam || data.session.leadingTeamId,
+        };
+        setSession(sess);
         setCurrentPlayer(data.session.currentPlayerId || null);
-        if (data.session.remainingSeconds !== undefined) {
-          setRemainingSeconds(data.session.remainingSeconds);
-        }
       }
       if (data.teams) {
         setTeams(data.teams);
+      }
+      if (data.recentBids !== undefined) {
+        setRecentBids(data.recentBids || []);
       }
     };
 
@@ -84,13 +88,17 @@ export function AuctionSocketProvider({ children }) {
         setFeasibilityWarning(null);
       }
       if (data.session) {
-        setSession(data.session);
+        const sess = {
+          ...data.session,
+          leadingTeam: data.session.leadingTeam || data.session.leadingTeamId,
+        };
+        setSession(sess);
       }
       if (data.teams) {
         setTeams(data.teams);
       }
       if (data.bid) {
-        setRecentBids((prev) => [data.bid, ...prev.slice(0, 19)]);
+        setRecentBids((prev) => [data.bid, ...prev.filter((b) => (b._id || b.idempotencyKey) !== (data.bid._id || data.bid.idempotencyKey)).slice(0, 19)]);
       }
     };
 
@@ -100,12 +108,7 @@ export function AuctionSocketProvider({ children }) {
     };
 
     const onTimerUpdated = (data) => {
-      if (data.remainingSeconds !== undefined) {
-        setRemainingSeconds(data.remainingSeconds);
-        if (data.remainingSeconds > 0 && data.remainingSeconds <= 5) {
-          playTimerTick(true);
-        }
-      }
+      // Countdown timer removed in favor of manual gavel control
     };
 
     const onPlayerSold = (data) => {
@@ -130,6 +133,8 @@ export function AuctionSocketProvider({ children }) {
         price: data.result?.purchase?.finalPurchasePrice,
       });
 
+      // Clear bids log for next player
+      setRecentBids([]);
       if (data.teams) setTeams(data.teams);
       fetchLiveState();
 
@@ -143,6 +148,8 @@ export function AuctionSocketProvider({ children }) {
         player: data.result?.player,
         isUnsold: true,
       });
+      // Clear bids log for next player
+      setRecentBids([]);
       fetchLiveState();
       setTimeout(() => setSoldCelebration(null), 4000);
     };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Timer, ArrowUpRight, AlertCircle, ShieldAlert, CheckCircle, Zap } from 'lucide-react';
-import { formatINR, formatSeconds } from '../../utils/formatters';
+import { Gavel, ArrowUpRight, AlertCircle, ShieldAlert, CheckCircle, Zap } from 'lucide-react';
+import { formatINR } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 import { useAuction } from '../../context/AuctionSocketContext';
 
@@ -10,13 +10,11 @@ export default function LiveBiddingWidget() {
   const {
     session,
     currentPlayer,
-    remainingSeconds,
     placeBid,
     tournament,
     bidError,
     clearBidError,
     feasibilityWarning,
-    clearFeasibilityWarning,
     isConnected,
   } = useAuction();
 
@@ -48,10 +46,6 @@ export default function LiveBiddingWidget() {
   const proposedBid = customBidInput ? Number(customBidInput.replace(/[^0-9]/g, '')) : nextMinBid;
   const willTriggerDeficit = proposedBid > maxSafeBid && availablePurse >= proposedBid;
 
-  // Countdown urgency
-  const isUrgentTimer = remainingSeconds <= 5 && remainingSeconds > 0;
-  const isTimerExpired = remainingSeconds <= 0 && session?.status === 'active';
-
   const handleQuickBid = async (amount) => {
     if (submitting || !currentPlayer) return;
     try {
@@ -76,23 +70,31 @@ export default function LiveBiddingWidget() {
   return (
     <div className="glass-panel rounded-2xl p-6 border border-cpl-border shadow-2xl relative">
       
-      {/* Top Bar: Live Timer & Connection Status */}
-      <div className="flex items-center justify-between pb-5 border-b border-cpl-border/80">
-        <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-xl ${isUrgentTimer ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-cpl-surface text-cpl-gold'}`}>
-            <Timer className="w-5 h-5" />
+      {/* Top Bar: Floor Status & Next Minimum Bid (Manual Gavel Control) */}
+      <div className="flex items-center justify-between pb-4 border-b border-cpl-border/80">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 rounded-xl bg-cpl-surface border border-cpl-border text-cpl-gold shadow-sm">
+            <Gavel className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Countdown</span>
-            <div className={`font-mono text-2xl font-black ${isUrgentTimer ? 'text-red-400 animate-pulse-fast' : 'text-white'}`}>
-              {session?.status === 'paused' ? 'PAUSED' : formatSeconds(remainingSeconds)}
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+              <span className="text-[10px] uppercase font-black tracking-wider text-emerald-400 block">
+                BIDDING OPEN
+              </span>
             </div>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Auctioneer Manual Gavel
+            </p>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Next Minimum Bid</span>
-          <span className="font-display font-extrabold text-xl text-cpl-gold">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Next Min Bid</span>
+          <span className="font-display font-black text-xl text-cpl-gold">
             {formatINR(nextMinBid)}
           </span>
         </div>
@@ -103,12 +105,7 @@ export default function LiveBiddingWidget() {
         {isLeading ? (
           <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-emerald-300">
             <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span className="text-xs font-bold">Your team is currently holding the highest bid!</span>
-          </div>
-        ) : isTimerExpired ? (
-          <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center gap-2.5 text-amber-300">
-            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-            <span className="text-xs font-bold">Timer expired! Awaiting auctioneer confirmation.</span>
+            <span className="text-xs font-bold">Your franchise currently holds the highest bid!</span>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
@@ -218,19 +215,29 @@ export default function LiveBiddingWidget() {
       ) : (
         <div className="p-4 rounded-xl bg-cpl-surface/80 border border-cpl-border text-center">
           <p className="text-xs text-slate-400">
-            {user ? (
-              <span>You are viewing in spectator mode. Only authenticated team owners may place live bids.</span>
-            ) : (
-              <span>
-                Spectating Public Live Scoreboard.{' '}
-                <a href="/login" className="text-cpl-gold font-bold underline ml-1">
-                  Sign in as Team Owner
-                </a>{' '}
-                to participate.
-              </span>
-            )}
+            You are viewing in spectator mode. Only authenticated team owners may place live bids.
           </p>
         </div>
+      )}
+
+      {/* Connection & Error Status */}
+      {bidError && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{bidError}</span>
+          </div>
+          <button
+            onClick={clearBidError}
+            className="text-[10px] uppercase font-bold text-red-400 hover:text-white ml-2 underline"
+          >
+            Dismiss
+          </button>
+        </motion.div>
       )}
 
     </div>

@@ -39,7 +39,13 @@ export async function getPlayers(req, res, next) {
 
     if (role && role !== 'all') filter.role = role;
     if (category && category !== 'all') filter.category = category;
-    if (status && status !== 'all') filter.status = status;
+    if (status && status !== 'all') {
+      if (status === 'nominatable' || status === 'available_or_unsold') {
+        filter.status = { $in: [PLAYER_STATUS.AVAILABLE, PLAYER_STATUS.UNSOLD] };
+      } else {
+        filter.status = status;
+      }
+    }
     if (department && department !== 'all') filter.department = department;
 
     const sortOptions = {};

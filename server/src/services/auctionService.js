@@ -106,12 +106,12 @@ export async function nominatePlayer(tournamentId, playerId, actorId) {
   player.status = PLAYER_STATUS.NOMINATED;
   await player.save();
 
-  // Atomically update session
+  // Atomically update session (Manual auctioneer gavel: no auto-expiring timer)
   session.currentPlayerId = player._id;
   session.currentBid = 0;
   session.leadingTeamId = null;
   session.leadingBidderId = null;
-  session.deadline = deadline;
+  session.deadline = null;
   session.status = AUCTION_STATUS.ACTIVE;
   session.sessionVersion += 1;
   session.pausedRemainingSeconds = 0;
@@ -128,7 +128,7 @@ export async function nominatePlayer(tournamentId, playerId, actorId) {
     payload: {
       playerName: player.name,
       basePrice: player.basePrice,
-      deadline,
+      status: player.status,
     },
     sessionVersion: session.sessionVersion,
   });
@@ -196,12 +196,6 @@ export async function placeBid({
     throw new Error('No player is currently active for bidding.');
   }
 
-  // Check deadline
-  const now = new Date();
-  if (session.deadline && now.getTime() > session.deadline.getTime()) {
-    throw new Error('Bidding deadline has expired for this player.');
-  }
-
   // Cannot bid against self if already leading
   if (session.leadingTeamId && session.leadingTeamId.toString() === teamId.toString()) {
     throw new Error('Your team currently holds the highest bid!');
@@ -213,19 +207,12 @@ export async function placeBid({
 
   const minNextBid = calculateNextMinBid(session.currentBid, player.basePrice, tournament.minBidIncrement);
   if (bidAmount < minNextBid) {
-    throw new Error(`Bid of ₹${bidAmount.toLocaleString('en-IN')} is below the minimum required bid of ₹${minNextBid.toLocaleString('en-IN')}.`);
+    throw new Error(`Bid of ${bidAmount} Credits is below the minimum required bid of ${minNextBid} Credits.`);
   }
 
-  // 4. Anti-sniping calculation: if bid arrives in the final seconds, extend deadline
-  const antiSnipingWindow = (tournament.antiSnipingSeconds || DEFAULT_CONFIG.ANTI_SNIPING_WINDOW_SECONDS) * 1000;
-  const antiSnipingExt = (tournament.antiSnipingExtensionSeconds || DEFAULT_CONFIG.ANTI_SNIPING_EXTENSION_SECONDS) * 1000;
-  let newDeadline = session.deadline;
+  const now = new Date();
 
-  if (session.deadline && session.deadline.getTime() - now.getTime() < antiSnipingWindow) {
-    newDeadline = new Date(now.getTime() + antiSnipingExt);
-  }
-
-  // 5. Concurrency-safe atomic update with optimistic session version check
+  // 4. Concurrency-safe atomic update with optimistic session version check
   const currentVersion = session.sessionVersion;
   const updatedSession = await AuctionSession.findOneAndUpdate(
     {
@@ -239,7 +226,7 @@ export async function placeBid({
         currentBid: bidAmount,
         leadingTeamId: team._id,
         leadingBidderId: bidderId,
-        deadline: newDeadline,
+        deadline: null,
         lastBidTimestamp: now,
       },
       $inc: { sessionVersion: 1 },
@@ -252,7 +239,7 @@ export async function placeBid({
     throw new Error('A competing bid was placed just ahead of yours. Please refresh and bid again.');
   }
 
-  // 6. Record accepted bid
+  // 5. Record accepted bid
   const bidDoc = await Bid.create({
     tournamentId,
     auctionSessionId: session._id,
@@ -276,7 +263,7 @@ export async function placeBid({
     minBasePrice,
   });
 
-  // 7. Record Auction Event
+  // 6. Record Auction Event
   await AuctionEvent.create({
     eventType: EVENT_TYPES.BID_ACCEPTED,
     tournamentId,
@@ -287,20 +274,27 @@ export async function placeBid({
       bidAmount,
       teamName: team.name,
       teamShortCode: team.shortCode,
-      deadline: newDeadline,
       feasibility,
     },
     sessionVersion: updatedSession.sessionVersion,
   });
+
+  // Populate both session and bid document completely so all clients receive rich team objects
+  const populatedBid = await Bid.findById(bidDoc._id)
+    .populate('teamId', 'name shortCode logoUrl primaryColor')
+    .populate('bidderId', 'name');
 
   const populatedSession = await AuctionSession.findById(updatedSession._id)
     .populate('currentPlayerId')
     .populate('leadingTeamId', 'name shortCode logoUrl primaryColor remainingPurse')
     .populate('leadingBidderId', 'name email');
 
+  const sessionObj = populatedSession.toObject();
+  sessionObj.leadingTeam = sessionObj.leadingTeamId;
+
   return {
-    bid: bidDoc,
-    session: populatedSession,
+    bid: populatedBid,
+    session: sessionObj,
     alreadyProcessed: false,
     feasibility,
   };

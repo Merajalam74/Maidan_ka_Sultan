@@ -14,7 +14,15 @@ export default function LiveAuctionPage() {
   const { user, isAuctioneer } = useAuth();
   const [nominationModalOpen, setNominationModalOpen] = useState(false);
 
-  const leadingTeam = session?.leadingTeam;
+  const leadingTeam =
+    (typeof session?.leadingTeam === 'object' && session?.leadingTeam?.name)
+      ? session.leadingTeam
+      : (typeof session?.leadingTeamId === 'object' && session?.leadingTeamId?.name)
+      ? session.leadingTeamId
+      : (teams || []).find((t) => {
+          const leadId = (session?.leadingTeamId?._id || session?.leadingTeamId || session?.leadingTeam?._id || session?.leadingTeam)?.toString();
+          return leadId && t._id?.toString() === leadId;
+        });
 
   return (
     <div className="space-y-6">

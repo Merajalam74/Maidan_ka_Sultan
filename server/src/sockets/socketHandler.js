@@ -218,38 +218,7 @@ export function initSockets(io) {
     });
   });
 
-  // Start background ticker for countdown synchronization
-  startTimerSyncTicker();
-}
-
-/**
- * Ticker loop to periodically emit timer updates and check expiration
- */
-function startTimerSyncTicker() {
-  if (timerInterval) clearInterval(timerInterval);
-
-  timerInterval = setInterval(async () => {
-    if (!ioInstance) return;
-
-    try {
-      const activeSessions = await AuctionSession.find({ status: 'active', deadline: { $ne: null } });
-      const now = Date.now();
-
-      for (const session of activeSessions) {
-        const remainingMs = session.deadline ? new Date(session.deadline).getTime() - now : 0;
-        const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
-
-        ioInstance.to(`tournament:${session.tournamentId}:public`).emit('auction:timer-updated', {
-          tournamentId: session.tournamentId,
-          deadline: session.deadline,
-          remainingSeconds,
-          serverTime: new Date(),
-        });
-      }
-    } catch (e) {
-      // Ignore ticker errors
-    }
-  }, 1000);
+  // Countdown ticker disabled — auctioneer manually concludes each lot via Hammer SOLD or Pass UNSOLD
 }
 
 /**
@@ -262,19 +231,27 @@ export async function broadcastAuctionState(tournamentId) {
     const session = await getOrCreateSession(tournamentId);
     const teams = await getTeamsWithDetails(tournamentId);
 
-    let remainingSeconds = 0;
-    if (session.status === 'active' && session.deadline) {
-      remainingSeconds = Math.max(0, Math.floor((new Date(session.deadline).getTime() - Date.now()) / 1000));
-    } else if (session.status === 'paused') {
-      remainingSeconds = session.pausedRemainingSeconds || 0;
-    }
+    const sessionObj = session.toObject ? session.toObject() : { ...session };
+    sessionObj.leadingTeam = sessionObj.leadingTeam || sessionObj.leadingTeamId;
+
+    // Fetch recent bids for the CURRENT active lot only
+    const Bid = (await import('../models/Bid.js')).default;
+    const recentBids = session.currentPlayerId
+      ? await Bid.find({
+          tournamentId,
+          playerId: session.currentPlayerId._id || session.currentPlayerId,
+          isAccepted: true,
+        })
+          .sort({ timestamp: -1 })
+          .limit(20)
+          .populate('teamId', 'name shortCode logoUrl primaryColor')
+          .populate('bidderId', 'name')
+      : [];
 
     ioInstance.to(`tournament:${tournamentId}:public`).emit('auction:state', {
-      session: {
-        ...session.toObject(),
-        remainingSeconds,
-      },
+      session: sessionObj,
       teams,
+      recentBids,
     });
   } catch (err) {
     console.error('[Socket] broadcastAuctionState error:', err.message);
@@ -290,9 +267,12 @@ export async function broadcastBidAccepted(tournamentId, { bid, session, feasibi
   try {
     const teams = await getTeamsWithDetails(tournamentId);
 
+    const sessionObj = session.toObject ? session.toObject() : { ...session };
+    sessionObj.leadingTeam = sessionObj.leadingTeam || sessionObj.leadingTeamId;
+
     ioInstance.to(`tournament:${tournamentId}:public`).emit('bid:accepted', {
       bid,
-      session,
+      session: sessionObj,
       teams,
       feasibility,
     });
