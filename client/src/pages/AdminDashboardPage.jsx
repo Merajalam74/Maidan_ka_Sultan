@@ -15,11 +15,15 @@ import {
   FileText,
   Search,
   RefreshCw,
+  Crown,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useAuction } from '../context/AuctionSocketContext';
 import { formatINR } from '../utils/formatters';
+import GoogleFormCsvBuilder from '../components/admin/GoogleFormCsvBuilder';
+import TeamFormModal from '../components/admin/TeamFormModal';
+import PlayerEditModal from '../components/admin/PlayerEditModal';
 
 export default function AdminDashboardPage() {
   const { isSuperAdmin, isAuctioneer } = useAuth();
@@ -38,6 +42,7 @@ export default function AdminDashboardPage() {
   const [importing, setImporting] = useState(false);
   const [columnMapping, setColumnMapping] = useState({
     name: '',
+    phoneNumber: '',
     role: '',
     basePrice: '',
     department: '',
@@ -55,6 +60,36 @@ export default function AdminDashboardPage() {
 
   // Tab 2: Team Edit state
   const [editingTeam, setEditingTeam] = useState(null);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+
+  const handleOpenAddTeam = () => {
+    setEditingTeam(null);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleOpenEditTeam = (team) => {
+    setEditingTeam(team);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleDeleteTeam = async (team) => {
+    if (!window.confirm(`Are you sure you want to delete "${team.name}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await api.delete(`/teams/${team._id}`);
+      if (res.data?.success) {
+        alert(res.data.message || `Team ${team.name} deleted successfully.`);
+        refreshState();
+        fetchAdminData();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete team.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Tab 3: Player Create / Edit state
   const [playerModal, setPlayerModal] = useState(null);
@@ -202,8 +237,9 @@ export default function AdminDashboardPage() {
       {/* Tabs */}
       <div className="flex flex-wrap border-b border-cpl-border gap-2">
         {[
-          { id: 'import', label: 'Import Players (Sheets/CSV)', icon: FileSpreadsheet },
-          { id: 'teams', label: '6 Franchises & Owners', icon: Users },
+          { id: 'googleform', label: 'Google Form & CSV Kit', icon: FileSpreadsheet },
+          { id: 'import', label: 'Import via Sheets/CSV', icon: UploadCloud },
+          { id: 'teams', label: '5 Franchises & Owners', icon: Users },
           { id: 'players', label: 'Player Directory', icon: UserPlus },
           { id: 'reversals', label: 'Audited Sale Reversals', icon: RotateCcw },
         ].map((tab) => {
@@ -224,6 +260,11 @@ export default function AdminDashboardPage() {
           );
         })}
       </div>
+
+      {/* ======================= TAB 0: GOOGLE FORM & CSV GENERATOR ======================= */}
+      {activeTab === 'googleform' && (
+        <GoogleFormCsvBuilder onPlayerCreated={() => fetchAdminData()} />
+      )}
 
       {/* ======================= TAB 1: IMPORT PLAYERS ======================= */}
       {activeTab === 'import' && (
@@ -315,8 +356,9 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-cpl-surface/80 p-4 rounded-xl border border-cpl-border">
                 {[
                   { key: 'name', label: 'Full Name *' },
+                  { key: 'phoneNumber', label: 'Phone Number *' },
                   { key: 'role', label: 'Playing Role *' },
-                  { key: 'basePrice', label: 'Base Price (₹) *' },
+                  { key: 'basePrice', label: 'Base Price (Credits) *' },
                   { key: 'department', label: 'Department' },
                   { key: 'academicYear', label: 'Academic Year' },
                   { key: 'photoUrl', label: 'Photo URL' },
@@ -409,38 +451,122 @@ export default function AdminDashboardPage() {
       {/* ======================= TAB 2: TEAMS & OWNERS ======================= */}
       {activeTab === 'teams' && (
         <div className="space-y-6">
+          {/* Teams Header with Add Team Button */}
+          <div className="glass-panel p-6 rounded-2xl border border-cpl-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-cpl-gold" />
+                <h3 className="font-display font-black text-lg text-white">
+                  Tournament Franchises ({teams?.length || 0})
+                </h3>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Configure team names, appointed captains, purse limits, and upload official logos directly via Cloudinary.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenAddTeam}
+              className="gold-gradient-btn px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-gold hover:brightness-110 flex items-center gap-2 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Team</span>
+            </button>
+          </div>
+
+          {/* Teams Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {(teams || []).map((team) => (
-              <div key={team._id} className="glass-panel p-5 rounded-2xl border border-cpl-border space-y-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-xl overflow-hidden bg-cpl-dark border flex items-center justify-center p-0.5 shrink-0"
-                    style={{ borderColor: team.primaryColor || '#F59E0B' }}
-                  >
-                    {team.logoUrl ? (
-                      <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-lg" />
-                    ) : (
-                      <span className="font-bold text-white text-xs">{team.shortCode}</span>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-display font-black text-base text-white truncate">{team.name}</h4>
-                    <span className="text-xs text-cpl-gold font-bold">{team.shortCode}</span>
-                  </div>
-                </div>
+              <div
+                key={team._id}
+                className="glass-panel p-5 rounded-2xl border border-cpl-border hover:border-cpl-gold/40 transition-all space-y-4 flex flex-col justify-between"
+              >
+                <div className="space-y-4">
+                  {/* Team Identity Banner */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-14 h-14 rounded-2xl overflow-hidden bg-cpl-dark border-2 flex items-center justify-center p-0.5 shrink-0 shadow-lg"
+                        style={{ borderColor: team.primaryColor || '#F59E0B' }}
+                      >
+                        {team.logoUrl ? (
+                          <img
+                            src={team.logoUrl}
+                            alt={team.name}
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                        ) : (
+                          <span className="font-display font-black text-sm text-white">
+                            {team.shortCode}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cpl-dark text-cpl-gold border border-cpl-border">
+                          {team.shortCode}
+                        </span>
+                        <h4 className="font-display font-black text-base text-white truncate mt-0.5">
+                          {team.name}
+                        </h4>
+                      </div>
+                    </div>
 
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Initial Purse:</span>
-                    <strong className="text-white">{formatINR(team.initialPurse)}</strong>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditTeam(team)}
+                        title="Edit Team & Logo"
+                        className="p-2 rounded-lg bg-cpl-surface hover:bg-cpl-gold/20 text-slate-300 hover:text-cpl-gold border border-cpl-border transition-all"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTeam(team)}
+                        title="Delete Team"
+                        className="p-2 rounded-lg bg-cpl-surface hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-cpl-border transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Remaining:</span>
-                    <strong className="text-cpl-gold">{formatINR(team.remainingPurse)}</strong>
+
+                  {/* Appointed Captain Badge */}
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-cpl-surface/80 border border-cpl-border/80 text-xs">
+                    <Crown className="w-4 h-4 text-cpl-gold shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                        Team Captain
+                      </span>
+                      <strong className="text-white truncate block">
+                        {team.captainName || 'Not Announced Yet'}
+                      </strong>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Assigned Owner:</span>
-                    <strong className="text-slate-200">{team.ownerUserId?.name || 'Unassigned'}</strong>
+
+                  {/* Financial & Squad Metrics */}
+                  <div className="space-y-1.5 text-xs bg-cpl-dark/60 p-3 rounded-xl border border-cpl-border/60">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Initial Purse:</span>
+                      <strong className="text-white font-mono">{formatINR(team.initialPurse)}</strong>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Remaining Purse:</span>
+                      <strong className="text-cpl-gold font-mono">{formatINR(team.remainingPurse)}</strong>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Squad Slots:</span>
+                      <strong className="text-slate-200">
+                        {team.purchasedCount ?? 0} / {team.maxSquadSize || 15} filled
+                      </strong>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Assigned Owner:</span>
+                      <strong className="text-slate-200 truncate max-w-[140px]">
+                        {team.ownerUserId?.name || 'Unassigned'}
+                      </strong>
+                    </div>
                   </div>
                 </div>
 
@@ -512,24 +638,36 @@ export default function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      {p.status !== 'sold' ? (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={async () => {
-                            if (!confirm(`Delete player ${p.name}?`)) return;
-                            try {
-                              await api.delete(`/players/${p._id}`);
-                              fetchAdminData();
-                            } catch (err) {
-                              alert(err.message);
-                            }
-                          }}
-                          className="text-red-400 hover:text-red-300 p-1"
+                          type="button"
+                          onClick={() => setPlayerModal(p)}
+                          title="Edit Player Profile"
+                          className="text-cpl-gold hover:text-amber-300 p-1 rounded hover:bg-cpl-surface transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Edit2 className="w-4 h-4" />
                         </button>
-                      ) : (
-                        <span className="text-[10px] text-slate-500">Locked (Sold)</span>
-                      )}
+                        {p.status !== 'sold' ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!confirm(`Delete player ${p.name}?`)) return;
+                              try {
+                                await api.delete(`/players/${p._id}`);
+                                fetchAdminData();
+                              } catch (err) {
+                                alert(err.response?.data?.message || err.message);
+                              }
+                            }}
+                            className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-cpl-surface transition-colors"
+                            title="Delete Player"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 font-bold uppercase">Locked</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -649,6 +787,25 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Team Create / Edit & Logo Upload Modal */}
+      <TeamFormModal
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
+        team={editingTeam}
+        onSaved={() => {
+          refreshState();
+          fetchAdminData();
+        }}
+      />
+
+      {/* Player Edit Modal */}
+      <PlayerEditModal
+        isOpen={Boolean(playerModal)}
+        onClose={() => setPlayerModal(null)}
+        player={playerModal}
+        onSaved={fetchAdminData}
+      />
 
     </div>
   );

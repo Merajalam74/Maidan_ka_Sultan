@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, User, ArrowUpDown, Shield, CheckCircle, Clock, XCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, User, ArrowUpDown, Shield, CheckCircle, Clock, XCircle, Edit2, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { formatINR } from '../utils/formatters';
 import { useAuction } from '../context/AuctionSocketContext';
+import { useAuth } from '../context/AuthContext';
+import PlayerEditModal from '../components/admin/PlayerEditModal';
 
 export default function PlayersPage() {
   const { tournament } = useAuction();
+  const { isSuperAdmin, isAuctioneer } = useAuth();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -14,35 +17,50 @@ export default function PlayersPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('nominationOrder');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [editingPlayer, setEditingPlayer] = useState(null);
+
+  const fetchPlayers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/players', {
+        params: {
+          tournamentId: tournament?.id,
+          search,
+          role: roleFilter,
+          status: statusFilter,
+          category: categoryFilter,
+          sortBy,
+          order: sortOrder,
+          limit: 100,
+        },
+      });
+      if (res.data?.success) {
+        setPlayers(res.data.players || []);
+      }
+    } catch (err) {
+      console.error('Failed to load players:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [tournament?.id, search, roleFilter, statusFilter, categoryFilter, sortBy, sortOrder]);
 
   useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/players', {
-          params: {
-            tournamentId: tournament?.id,
-            search,
-            role: roleFilter,
-            status: statusFilter,
-            category: categoryFilter,
-            sortBy,
-            order: sortOrder,
-            limit: 100,
-          },
-        });
-        if (res.data?.success) {
-          setPlayers(res.data.players || []);
-        }
-      } catch (err) {
-        console.error('Failed to load players:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPlayers();
-  }, [tournament?.id, search, roleFilter, statusFilter, categoryFilter, sortBy, sortOrder]);
+  }, [fetchPlayers]);
+
+  const handleDeletePlayer = async (player) => {
+    if (!window.confirm(`Are you sure you want to remove player "${player.name}" from the tournament pool? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await api.delete(`/players/${player._id}`);
+      if (res.data?.success) {
+        fetchPlayers();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete player.');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -189,22 +207,29 @@ export default function PlayersPage() {
                   <div className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono text-slate-500 font-bold">{player.externalId || 'ID-N/A'}</span>
-                      <span className="text-[10px] text-slate-400">{player.academicYear}</span>
+                      {player.phoneNumber && (
+                        <span className="text-[10px] font-mono text-slate-400">📱 {player.phoneNumber}</span>
+                      )}
                     </div>
 
                     <h3 className="font-display font-extrabold text-base text-white truncate leading-tight">
                       {player.name}
                     </h3>
-                    <p className="text-xs text-slate-400 truncate">{player.department}</p>
+                    <p className="text-xs text-slate-400 truncate">{player.department} • {player.academicYear}</p>
                     
-                    {/* Styles */}
-                    <p className="text-[11px] text-slate-500 truncate pt-1">
-                      {player.battingStyle} • {player.bowlingStyle}
-                    </p>
+                    {/* Styles & Category */}
+                    <div className="flex items-center justify-between gap-1 pt-1">
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {player.battingStyle} • {player.bowlingStyle}
+                      </p>
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-cpl-surface border border-cpl-border text-slate-300 shrink-0">
+                        {player.category || 'Category A'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Footer Pricing Info */}
+                {/* Footer Pricing & Admin Action Info */}
                 <div className="p-4 pt-3 border-t border-cpl-border/70 bg-cpl-surface/50 flex items-center justify-between text-xs">
                   <div>
                     <span className="text-[10px] text-slate-500 uppercase font-bold block">Base Price</span>
@@ -219,6 +244,29 @@ export default function PlayersPage() {
                       </span>
                     </div>
                   )}
+
+                  {/* Admin Actions: Edit & Delete */}
+                  {(isSuperAdmin || isAuctioneer) && (
+                    <div className="flex items-center gap-1.5 ml-auto pl-2 border-l border-cpl-border/80">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPlayer(player)}
+                        title="Edit Player Profile"
+                        className="p-1.5 rounded-lg bg-cpl-dark hover:bg-cpl-gold/20 text-slate-300 hover:text-cpl-gold border border-cpl-border transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePlayer(player)}
+                        disabled={isSold}
+                        title={isSold ? 'Cannot delete SOLD player' : 'Remove Player'}
+                        className="p-1.5 rounded-lg bg-cpl-dark hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-cpl-border transition-colors disabled:opacity-30 disabled:hover:bg-cpl-dark disabled:hover:text-slate-400"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -226,6 +274,14 @@ export default function PlayersPage() {
           })}
         </div>
       )}
+
+      {/* Admin Player Edit Modal */}
+      <PlayerEditModal
+        isOpen={Boolean(editingPlayer)}
+        onClose={() => setEditingPlayer(null)}
+        player={editingPlayer}
+        onSaved={fetchPlayers}
+      />
 
     </div>
   );

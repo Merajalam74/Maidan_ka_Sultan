@@ -34,6 +34,11 @@ export async function getTeamsWithDetails(tournamentId) {
     const squad = purchaseMap.get(team._id.toString()) || [];
     const spent = squad.reduce((sum, p) => sum + p.finalPurchasePrice, 0);
     const remaining = Math.max(0, team.initialPurse - spent);
+    const minSquad = 11;
+    const minBasePrice = 1;
+    const slotsNeededAfterCurrent = Math.max(0, minSquad - squad.length - 1);
+    const minReserveNeeded = slotsNeededAfterCurrent * minBasePrice;
+    const maxSafeBid = Math.max(0, remaining - minReserveNeeded);
 
     return {
       ...team,
@@ -47,6 +52,8 @@ export async function getTeamsWithDetails(tournamentId) {
       remainingSlots: Math.max(0, (team.maxSquadSize || 15) - squad.length),
       committedSpent: spent,
       remainingPurse: remaining,
+      minReserveNeeded,
+      maxSafeBid,
     };
   });
 }

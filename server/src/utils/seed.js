@@ -35,37 +35,38 @@ export async function seedDatabase(options = { clearExisting: false }) {
   }
 
   // 1. Create or verify Tournament
-  let tournament = await Tournament.findOne({ name: 'Campus Premier League 2026' });
+  let tournament = await Tournament.findOne({ name: 'Maidan ke Sultan - Season 5' });
   if (!tournament) {
     tournament = await Tournament.create({
-      name: 'Campus Premier League 2026',
+      name: 'Maidan ke Sultan - Season 5',
       status: AUCTION_STATUS.LIVE,
-      currency: 'INR',
-      currencySymbol: '₹',
-      defaultPurse: 10000000, // ₹1,00,00,000 (1 Crore per team)
-      minBidIncrement: 50000,  // ₹50,000 minimum increment
+      currency: 'CREDITS',
+      currencySymbol: 'CR',
+      defaultPurse: 100, // 100 Credits per team
+      minBidIncrement: 1,  // 1 Credit minimum increment
+      minBasePrice: 1,     // 1 Credit minimum base price
       squadLimit: 15,
       minSquadSize: 11,
       countdownDurationSeconds: 30,
       antiSnipingSeconds: 10,
       antiSnipingExtensionSeconds: 15,
-      rulesDescription: 'Official College Cricket Tournament. 6 Collegiate Franchises. Pure Live Bidding. Base prices configured per player.',
+      rulesDescription: 'Maidan ke Sultan Season 5 Live Player Auction. 5 Franchises: Jeb Katre, Maqsad XI, Khalnayak XI, Phurtile Sher, Dhurandar XI. 100 Credits allocated per franchise with CricHeroes stats integration and mathematical purse guarantees.',
       scheduledStartTime: new Date(),
     });
     console.log('[Seed] Created Tournament:', tournament.name);
   }
 
-  // 2. Create Users (Superadmin, Auctioneer, 6 Team Owners)
+  // 2. Create Users (Superadmin, Auctioneer, 5 Team Owners)
   const passwordHash = await User.hashPassword('Admin@123456');
   const auctioneerHash = await User.hashPassword('Auctioneer@123456');
   const ownerHash = await User.hashPassword('Owner@123456');
 
   // Super Admin
   const adminUser = await User.findOneAndUpdate(
-    { email: 'admin@cpl.edu' },
+    { email: 'admin@mks.edu' },
     {
-      name: 'Rajesh Malhotra (Tournament Director)',
-      email: 'admin@cpl.edu',
+      name: 'Tournament Director (Maidan ke Sultan)',
+      email: 'admin@mks.edu',
       passwordHash,
       globalRole: ROLES.SUPERADMIN,
       status: 'active',
@@ -76,10 +77,10 @@ export async function seedDatabase(options = { clearExisting: false }) {
 
   // Auctioneer
   const auctioneerUser = await User.findOneAndUpdate(
-    { email: 'auctioneer@cpl.edu' },
+    { email: 'auctioneer@mks.edu' },
     {
-      name: 'Charu Sharma (Official Auctioneer)',
-      email: 'auctioneer@cpl.edu',
+      name: 'Charu Sharma (Official Gavel Master)',
+      email: 'auctioneer@mks.edu',
       passwordHash: auctioneerHash,
       globalRole: ROLES.AUCTIONEER,
       status: 'active',
@@ -88,14 +89,13 @@ export async function seedDatabase(options = { clearExisting: false }) {
     { upsert: true, new: true }
   );
 
-  // 6 Team Owners
+  // Exactly 5 Team Owners
   const ownerConfigs = [
-    { email: 'owner1@cpl.edu', name: 'Vikram Rathore', teamName: 'Apex Predators' },
-    { email: 'owner2@cpl.edu', name: 'Aarav Sharma', teamName: 'Titan Strikers' },
-    { email: 'owner3@cpl.edu', name: 'Kabir Mehta', teamName: 'Royal Challengers Campus' },
-    { email: 'owner4@cpl.edu', name: 'Rohan Varma', teamName: 'Falcon Blasters' },
-    { email: 'owner5@cpl.edu', name: 'Aditya Singh', teamName: 'Spartan Knights' },
-    { email: 'owner6@cpl.edu', name: 'Devansh Kapoor', teamName: 'Viper Warriors' },
+    { email: 'jebkatre@mks.edu', name: 'Sultan Bhai (Owner)', teamName: 'Jeb Katre' },
+    { email: 'maqsad@mks.edu', name: 'Captain Maqsad (Owner)', teamName: 'Maqsad XI' },
+    { email: 'khalnayak@mks.edu', name: 'Ballu Balram (Owner)', teamName: 'Khalnayak XI' },
+    { email: 'phurtile@mks.edu', name: 'Sheru Khan (Owner)', teamName: 'Phurtile Sher' },
+    { email: 'dhurandar@mks.edu', name: 'Dhurandar Bhargav (Owner)', teamName: 'Dhurandar XI' },
   ];
 
   const createdOwners = [];
@@ -108,68 +108,64 @@ export async function seedDatabase(options = { clearExisting: false }) {
         passwordHash: ownerHash,
         globalRole: ROLES.TEAM_OWNER,
         status: 'active',
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${o.name}`,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(o.teamName)}`,
       },
       { upsert: true, new: true }
     );
     createdOwners.push({ user: owner, teamName: o.teamName });
   }
 
-  // 3. Create Exactly 6 Participating Teams
+  // 3. Create Exactly 5 Participating Teams
   const teamTemplates = [
     {
-      name: 'Apex Predators',
-      shortCode: 'APX',
+      name: 'Jeb Katre',
+      shortCode: 'JBK',
+      captainName: 'Aarav Sharma',
       logoUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=200',
-      primaryColor: '#F59E0B', // Gold
-      secondaryColor: '#0F172A',
-      initialPurse: 10000000,
-      ownerEmail: 'owner1@cpl.edu',
-    },
-    {
-      name: 'Titan Strikers',
-      shortCode: 'STR',
-      logoUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=200',
-      primaryColor: '#06B6D4', // Cyan
-      secondaryColor: '#0E7490',
-      initialPurse: 10000000,
-      ownerEmail: 'owner2@cpl.edu',
-    },
-    {
-      name: 'Royal Challengers Campus',
-      shortCode: 'RCC',
-      logoUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#EF4444', // Crimson Red
       secondaryColor: '#991B1B',
-      initialPurse: 10000000,
-      ownerEmail: 'owner3@cpl.edu',
+      initialPurse: 100,
+      ownerEmail: 'jebkatre@mks.edu',
     },
     {
-      name: 'Falcon Blasters',
-      shortCode: 'FLC',
-      logoUrl: 'https://images.unsplash.com/photo-1569517282132-25d22f4573e6?auto=format&fit=crop&q=80&w=200',
+      name: 'Maqsad XI',
+      shortCode: 'MQX',
+      captainName: 'Faizan Sheikh',
+      logoUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#10B981', // Emerald Green
-      secondaryColor: '#047857',
-      initialPurse: 10000000,
-      ownerEmail: 'owner4@cpl.edu',
+      secondaryColor: '#064E3B',
+      initialPurse: 100,
+      ownerEmail: 'maqsad@mks.edu',
     },
     {
-      name: 'Spartan Knights',
-      shortCode: 'SPK',
-      logoUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=200',
-      primaryColor: '#8B5CF6', // Purple
+      name: 'Khalnayak XI',
+      shortCode: 'KLX',
+      captainName: 'Kabir Patel',
+      logoUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=200',
+      primaryColor: '#8B5CF6', // Royal Purple
       secondaryColor: '#5B21B6',
-      initialPurse: 10000000,
-      ownerEmail: 'owner5@cpl.edu',
+      initialPurse: 100,
+      ownerEmail: 'khalnayak@mks.edu',
     },
     {
-      name: 'Viper Warriors',
-      shortCode: 'VPW',
-      logoUrl: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&q=80&w=200',
-      primaryColor: '#F97316', // Orange
+      name: 'Phurtile Sher',
+      shortCode: 'PHS',
+      captainName: 'Rohan Mehra',
+      logoUrl: 'https://images.unsplash.com/photo-1569517282132-25d22f4573e6?auto=format&fit=crop&q=80&w=200',
+      primaryColor: '#F97316', // Tiger Orange
       secondaryColor: '#C2410C',
-      initialPurse: 10000000,
-      ownerEmail: 'owner6@cpl.edu',
+      initialPurse: 100,
+      ownerEmail: 'phurtile@mks.edu',
+    },
+    {
+      name: 'Dhurandar XI',
+      shortCode: 'DHX',
+      captainName: 'Devansh Verma',
+      logoUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=200',
+      primaryColor: '#06B6D4', // Cyan
+      secondaryColor: '#0E7490',
+      initialPurse: 100,
+      ownerEmail: 'dhurandar@mks.edu',
     },
   ];
 
@@ -182,6 +178,7 @@ export async function seedDatabase(options = { clearExisting: false }) {
         tournamentId: tournament._id,
         name: t.name,
         shortCode: t.shortCode,
+        captainName: t.captainName || '',
         logoUrl: t.logoUrl,
         primaryColor: t.primaryColor,
         secondaryColor: t.secondaryColor,
@@ -222,16 +219,17 @@ export async function seedDatabase(options = { clearExisting: false }) {
     { upsert: true }
   );
 
-  // 4. Create 32 Realistic College Cricket Players
+  // 4. Create 15 Realistic College Cricket Players with Phone Numbers and CricHeroes Stats / nan
   const samplePlayers = [
     {
-      externalId: 'CPL-P01',
+      externalId: 'MKS-P01',
       name: 'Rudra Pratap Sengupta',
+      phoneNumber: '+91 98765 11001',
       role: PLAYER_ROLES.BATSMAN,
       category: PLAYER_CATEGORIES.MARQUEE,
       department: 'Computer Science & Engg',
       academicYear: '4th Year',
-      basePrice: 500000,
+      basePrice: 10,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Right-arm medium',
       photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
@@ -239,13 +237,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 1,
     },
     {
-      externalId: 'CPL-P02',
+      externalId: 'MKS-P02',
       name: 'Arjun Venkatesh',
+      phoneNumber: '+91 98765 11002',
       role: PLAYER_ROLES.BOWLER,
       category: PLAYER_CATEGORIES.MARQUEE,
       department: 'Mechanical Engg',
       academicYear: '3rd Year',
-      basePrice: 500000,
+      basePrice: 10,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Right-arm fast (140+ kmph)',
       photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
@@ -253,13 +252,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 2,
     },
     {
-      externalId: 'CPL-P03',
+      externalId: 'MKS-P03',
       name: 'Manish Karthik',
+      phoneNumber: '+91 98765 11003',
       role: PLAYER_ROLES.ALL_ROUNDER,
       category: PLAYER_CATEGORIES.MARQUEE,
       department: 'Electronics & Comm Engg',
       academicYear: '4th Year',
-      basePrice: 600000,
+      basePrice: 10,
       battingStyle: 'Left-hand bat',
       bowlingStyle: 'Right-arm offbreak',
       photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
@@ -267,13 +267,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 3,
     },
     {
-      externalId: 'CPL-P04',
+      externalId: 'MKS-P04',
       name: 'Dhruv Rishabh Pant',
+      phoneNumber: '+91 98765 11004',
       role: PLAYER_ROLES.WICKET_KEEPER,
       category: PLAYER_CATEGORIES.MARQUEE,
       department: 'Management Studies (MBA)',
       academicYear: '2nd Year',
-      basePrice: 450000,
+      basePrice: 8,
       battingStyle: 'Left-hand aggressive bat',
       bowlingStyle: 'Right-arm off spin',
       photoUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
@@ -281,13 +282,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 4,
     },
     {
-      externalId: 'CPL-P05',
+      externalId: 'MKS-P05',
       name: 'Siddharth Iyer',
+      phoneNumber: '+91 98765 11005',
       role: PLAYER_ROLES.BATSMAN,
       category: PLAYER_CATEGORIES.CATEGORY_A,
       department: 'Information Technology',
       academicYear: '3rd Year',
-      basePrice: 300000,
+      basePrice: 5,
       battingStyle: 'Right-hand bat (Anchor)',
       bowlingStyle: 'Right-arm leg spin',
       photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
@@ -295,27 +297,30 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 5,
     },
     {
-      externalId: 'CPL-P06',
+      externalId: 'MKS-P06',
       name: 'Tariq Al-Mansoor',
+      phoneNumber: '+91 98765 11006',
       role: PLAYER_ROLES.BOWLER,
       category: PLAYER_CATEGORIES.CATEGORY_A,
       department: 'Civil Engg',
       academicYear: '4th Year',
-      basePrice: 300000,
+      basePrice: 5,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Left-arm orthodox spin',
       photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
-      stats: { matches: 26, runs: 120, wickets: 36, strikeRate: 98.0, economy: 5.9, bestBowling: '4/14' },
+      // Demonstrating 'nan' fallback for players with no CricHeroes match record
+      stats: { matches: 'nan', runs: 'nan', wickets: 'nan', strikeRate: 'nan', economy: 'nan', highestScore: 'nan', bestBowling: 'nan' },
       nominationOrder: 6,
     },
     {
-      externalId: 'CPL-P07',
+      externalId: 'MKS-P07',
       name: 'Pranav Kulkarni',
+      phoneNumber: '+91 98765 11007',
       role: PLAYER_ROLES.ALL_ROUNDER,
       category: PLAYER_CATEGORIES.CATEGORY_A,
       department: 'Biotechnology',
       academicYear: '3rd Year',
-      basePrice: 350000,
+      basePrice: 6,
       battingStyle: 'Right-hand power hitter',
       bowlingStyle: 'Right-arm medium fast',
       photoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=300',
@@ -323,13 +328,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 7,
     },
     {
-      externalId: 'CPL-P08',
+      externalId: 'MKS-P08',
       name: 'Adil Khan',
+      phoneNumber: '+91 98765 11008',
       role: PLAYER_ROLES.BOWLER,
       category: PLAYER_CATEGORIES.CATEGORY_A,
       department: 'Electrical & Electronics',
       academicYear: '2nd Year',
-      basePrice: 250000,
+      basePrice: 5,
       battingStyle: 'Left-hand bat',
       bowlingStyle: 'Right-arm express fast',
       photoUrl: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=300',
@@ -337,27 +343,29 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 8,
     },
     {
-      externalId: 'CPL-P09',
+      externalId: 'MKS-P09',
       name: 'Kunal Deshmukh',
+      phoneNumber: '+91 98765 11009',
       role: PLAYER_ROLES.BATSMAN,
       category: PLAYER_CATEGORIES.CATEGORY_B,
       department: 'Chemical Engg',
       academicYear: '3rd Year',
-      basePrice: 150000,
+      basePrice: 3,
       battingStyle: 'Right-hand opening bat',
       bowlingStyle: 'Right-arm medium',
       photoUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=300',
-      stats: { matches: 15, runs: 420, wickets: 2, strikeRate: 130.5, economy: 8.5, highestScore: '59' },
+      stats: { matches: 'nan', runs: 'nan', wickets: 'nan', strikeRate: 'nan', economy: 'nan', highestScore: 'nan', bestBowling: 'nan' },
       nominationOrder: 9,
     },
     {
-      externalId: 'CPL-P10',
+      externalId: 'MKS-P10',
       name: 'Samarth Nambiar',
+      phoneNumber: '+91 98765 11010',
       role: PLAYER_ROLES.WICKET_KEEPER,
       category: PLAYER_CATEGORIES.CATEGORY_B,
       department: 'Computer Applications (MCA)',
       academicYear: '1st Year',
-      basePrice: 150000,
+      basePrice: 3,
       battingStyle: 'Right-hand middle order',
       bowlingStyle: 'None',
       photoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=300',
@@ -365,13 +373,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 10,
     },
     {
-      externalId: 'CPL-P11',
+      externalId: 'MKS-P11',
       name: 'Yash Vardhan Chawla',
+      phoneNumber: '+91 98765 11011',
       role: PLAYER_ROLES.BOWLER,
       category: PLAYER_CATEGORIES.CATEGORY_B,
       department: 'Mechanical Engg',
       academicYear: '2nd Year',
-      basePrice: 150000,
+      basePrice: 3,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Right-arm mystery spin',
       photoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
@@ -379,13 +388,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 11,
     },
     {
-      externalId: 'CPL-P12',
+      externalId: 'MKS-P12',
       name: 'Harshavardhan Reddy',
+      phoneNumber: '+91 98765 11012',
       role: PLAYER_ROLES.ALL_ROUNDER,
       category: PLAYER_CATEGORIES.EMERGING,
       department: 'Computer Science',
       academicYear: '1st Year (Freshman)',
-      basePrice: 100000,
+      basePrice: 2,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Right-arm seam',
       photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
@@ -393,27 +403,29 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 12,
     },
     {
-      externalId: 'CPL-P13',
+      externalId: 'MKS-P13',
       name: 'Aakash Bhattacharya',
+      phoneNumber: '+91 98765 11013',
       role: PLAYER_ROLES.BATSMAN,
       category: PLAYER_CATEGORIES.EMERGING,
       department: 'Aerospace Engg',
       academicYear: '1st Year',
-      basePrice: 100000,
+      basePrice: 2,
       battingStyle: 'Left-hand top order',
       bowlingStyle: 'Left-arm spin',
       photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-      stats: { matches: 8, runs: 280, wickets: 3, strikeRate: 152.0, economy: 8.4, highestScore: '62' },
+      stats: { matches: 'nan', runs: 'nan', wickets: 'nan', strikeRate: 'nan', economy: 'nan', highestScore: 'nan', bestBowling: 'nan' },
       nominationOrder: 13,
     },
     {
-      externalId: 'CPL-P14',
+      externalId: 'MKS-P14',
       name: 'Gaurav Tewari',
+      phoneNumber: '+91 98765 11014',
       role: PLAYER_ROLES.BOWLER,
       category: PLAYER_CATEGORIES.EMERGING,
       department: 'Metallurgical Engg',
       academicYear: '2nd Year',
-      basePrice: 100000,
+      basePrice: 2,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Right-arm yorker specialist',
       photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
@@ -421,13 +433,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
       nominationOrder: 14,
     },
     {
-      externalId: 'CPL-P15',
+      externalId: 'MKS-P15',
       name: 'Nikhil Roy',
+      phoneNumber: '+91 98765 11015',
       role: PLAYER_ROLES.ALL_ROUNDER,
       category: PLAYER_CATEGORIES.CATEGORY_B,
       department: 'Information Science',
       academicYear: '3rd Year',
-      basePrice: 200000,
+      basePrice: 3,
       battingStyle: 'Right-hand bat',
       bowlingStyle: 'Right-arm offbreak',
       photoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=300',
@@ -443,6 +456,7 @@ export async function seedDatabase(options = { clearExisting: false }) {
         tournamentId: tournament._id,
         externalId: p.externalId,
         name: p.name,
+        phoneNumber: p.phoneNumber || '',
         role: p.role,
         category: p.category,
         department: p.department,

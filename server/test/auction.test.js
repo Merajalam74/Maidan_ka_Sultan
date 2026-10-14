@@ -18,8 +18,10 @@ import {
   reversePurchase,
   nominatePlayer,
   calculateNextMinBid,
+  checkPurseFeasibility,
 } from '../src/services/auctionService.js';
 import { previewPlayerImport, commitPlayerImport } from '../src/services/playerService.js';
+import { fetchCricHeroesStatsByPhone } from '../src/services/cricheroesService.js';
 
 let tournamentId;
 let adminToken;
@@ -48,7 +50,7 @@ beforeEach(async () => {
 
   // Log in as Superadmin
   const adminRes = await request(app).post('/api/auth/login').send({
-    email: 'admin@cpl.edu',
+    email: 'admin@mks.edu',
     password: 'Admin@123456',
   });
   adminToken = adminRes.body.token;
@@ -56,31 +58,30 @@ beforeEach(async () => {
 
   // Log in as Auctioneer
   const auctioneerRes = await request(app).post('/api/auth/login').send({
-    email: 'auctioneer@cpl.edu',
+    email: 'auctioneer@mks.edu',
     password: 'Auctioneer@123456',
   });
   auctioneerToken = auctioneerRes.body.token;
 
-  // Log in as Owner 1 (Apex Predators)
+  // Log in as Owner 1 (Jeb Katre)
   const owner1Res = await request(app).post('/api/auth/login').send({
-    email: 'owner1@cpl.edu',
+    email: 'jebkatre@mks.edu',
     password: 'Owner@123456',
   });
   owner1Token = owner1Res.body.token;
   owner1User = owner1Res.body.user;
 
-  // Log in as Owner 2 (Titan Strikers)
+  // Log in as Owner 2 (Maqsad XI)
   const owner2Res = await request(app).post('/api/auth/login').send({
-    email: 'owner2@cpl.edu',
+    email: 'maqsad@mks.edu',
     password: 'Owner@123456',
   });
   owner2Token = owner2Res.body.token;
   owner2User = owner2Res.body.user;
 
   // Fetch teams and players
-  const teams = await Team.find({ tournamentId }).sort({ name: 1 });
-  team1 = teams[0];
-  team2 = teams[1];
+  team1 = await Team.findOne({ tournamentId, ownerUserId: owner1User._id });
+  team2 = await Team.findOne({ tournamentId, ownerUserId: owner2User._id });
 
   const players = await Player.find({ tournamentId }).sort({ nominationOrder: 1 });
   player1 = players[0];
@@ -92,7 +93,7 @@ describe('1. Authentication & Role-Based Access Control', () => {
     const res = await request(app).get('/api/auction/state');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.teams).toHaveLength(6);
+    expect(res.body.teams).toHaveLength(5);
     expect(res.body.tournament).toBeDefined();
   });
 
@@ -136,10 +137,10 @@ describe('1. Authentication & Role-Based Access Control', () => {
 
 describe('2. Bidding Rules & Validation', () => {
   it('calculates next minimum valid bid accurately', () => {
-    // Opening bid on player with 5,00,000 base price
-    expect(calculateNextMinBid(0, 500000, 50000)).toBe(500000);
-    // Subsequent bid after 5,00,000
-    expect(calculateNextMinBid(500000, 500000, 50000)).toBe(550000);
+    // Opening bid on player with 10 Credits base price
+    expect(calculateNextMinBid(0, 10, 1)).toBe(10);
+    // Subsequent bid after 10 Credits
+    expect(calculateNextMinBid(10, 10, 1)).toBe(11);
   });
 
   it('rejects bid below player base price on opening bid', async () => {
@@ -148,7 +149,7 @@ describe('2. Bidding Rules & Validation', () => {
         tournamentId,
         teamId: team1._id,
         bidderId: owner1User._id,
-        bidAmount: 100000, // player1 base price is 500000
+        bidAmount: 5, // player1 base price is 10 Credits
         idempotencyKey: 'test_low_bid_1',
       })
     ).rejects.toThrow(/below the minimum required bid/i);
@@ -159,11 +160,11 @@ describe('2. Bidding Rules & Validation', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: 'valid_open_bid_1',
     });
-    expect(result.bid.bidAmount).toBe(500000);
-    expect(result.session.currentBid).toBe(500000);
+    expect(result.bid.bidAmount).toBe(10);
+    expect(result.session.currentBid).toBe(10);
     expect(result.session.leadingTeamId._id.toString()).toBe(team1._id.toString());
   });
 
@@ -172,7 +173,7 @@ describe('2. Bidding Rules & Validation', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: 'bid_self_1',
     });
 
@@ -181,7 +182,7 @@ describe('2. Bidding Rules & Validation', () => {
         tournamentId,
         teamId: team1._id,
         bidderId: owner1User._id,
-        bidAmount: 550000,
+        bidAmount: 11,
         idempotencyKey: 'bid_self_2',
       })
     ).rejects.toThrow(/currently holds the highest bid/i);
@@ -189,7 +190,7 @@ describe('2. Bidding Rules & Validation', () => {
 
   it('rejects bids when a team has insufficient purse', async () => {
     // Artificially deplete team2 purse
-    team2.remainingPurse = 100000;
+    team2.remainingPurse = 5;
     await team2.save();
 
     await expect(
@@ -197,7 +198,7 @@ describe('2. Bidding Rules & Validation', () => {
         tournamentId,
         teamId: team2._id,
         bidderId: owner2User._id,
-        bidAmount: 500000,
+        bidAmount: 10,
         idempotencyKey: 'insufficient_purse_bid',
       })
     ).rejects.toThrow(/insufficient purse/i);
@@ -210,7 +211,7 @@ describe('2. Bidding Rules & Validation', () => {
       .send({
         tournamentId,
         teamId: team2._id.toString(), // Attempting to bid for team 2!
-        bidAmount: 500000,
+        bidAmount: 10,
       });
 
     expect(res.status).toBe(403);
@@ -223,7 +224,7 @@ describe('2. Bidding Rules & Validation', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: key,
     });
     expect(first.alreadyProcessed).toBe(false);
@@ -232,7 +233,7 @@ describe('2. Bidding Rules & Validation', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: key,
     });
     expect(duplicate.alreadyProcessed).toBe(true);
@@ -248,14 +249,14 @@ describe('3. Concurrency Safety', () => {
         tournamentId,
         teamId: team1._id,
         bidderId: owner1User._id,
-        bidAmount: 500000,
+        bidAmount: 10,
         idempotencyKey: 'concurrent_bid_team1',
       }),
       placeBid({
         tournamentId,
         teamId: team2._id,
         bidderId: owner2User._id,
-        bidAmount: 500000,
+        bidAmount: 10,
         idempotencyKey: 'concurrent_bid_team2',
       }),
     ]);
@@ -268,7 +269,7 @@ describe('3. Concurrency Safety', () => {
     expect(rejected).toHaveLength(1);
 
     const session = await AuctionSession.findOne({ tournamentId });
-    expect(session.currentBid).toBe(500000);
+    expect(session.currentBid).toBe(10);
   });
 });
 
@@ -279,7 +280,7 @@ describe('4. SOLD & UNSOLD Workflows & Reversal', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: 'winning_bid_1',
     });
 
@@ -288,17 +289,17 @@ describe('4. SOLD & UNSOLD Workflows & Reversal', () => {
 
     expect(soldResult.player.status).toBe('sold');
     expect(soldResult.player.winningTeamId.toString()).toBe(team1._id.toString());
-    expect(soldResult.player.soldPrice).toBe(500000);
+    expect(soldResult.player.soldPrice).toBe(10);
 
     // Verify purse deducted
     const updatedTeam = await Team.findById(team1._id);
-    expect(updatedTeam.committedSpent).toBe(500000);
-    expect(updatedTeam.remainingPurse).toBe(initialPurse - 500000);
+    expect(updatedTeam.committedSpent).toBe(10);
+    expect(updatedTeam.remainingPurse).toBe(initialPurse - 10);
 
     // Verify purchase record
     const purchase = await Purchase.findOne({ playerId: player1._id, status: 'completed' });
     expect(purchase).toBeDefined();
-    expect(purchase.finalPurchasePrice).toBe(500000);
+    expect(purchase.finalPurchasePrice).toBe(10);
 
     // Verify session reset
     const session = await AuctionSession.findOne({ tournamentId });
@@ -323,7 +324,7 @@ describe('4. SOLD & UNSOLD Workflows & Reversal', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: 'reversal_test_bid',
     });
     const soldResult = await markPlayerSold(tournamentId, adminUser._id);
@@ -356,9 +357,9 @@ describe('4. SOLD & UNSOLD Workflows & Reversal', () => {
 describe('5. Player Import & Validation', () => {
   it('previews and validates CSV rows with column mapping', async () => {
     const rawRows = [
-      { 'Name': 'Kavya Raman', 'Role': 'Batsman', 'Base Price': '200000', 'Dept': 'CSE', 'Year': '2nd Year' },
-      { 'Name': 'Tanmay Roy', 'Role': 'Bowler', 'Base Price': '150000', 'Dept': 'ECE', 'Year': '3rd Year' },
-      { 'Name': '', 'Role': 'All-Rounder', 'Base Price': '100000' }, // Invalid row (missing name)
+      { 'Name': 'Kavya Raman', 'Role': 'Batsman', 'Base Price': '5', 'Dept': 'CSE', 'Year': '2nd Year' },
+      { 'Name': 'Tanmay Roy', 'Role': 'Bowler', 'Base Price': '4', 'Dept': 'ECE', 'Year': '3rd Year' },
+      { 'Name': '', 'Role': 'All-Rounder', 'Base Price': '2' }, // Invalid row (missing name)
     ];
 
     const mapping = {
@@ -387,7 +388,7 @@ describe('5. Player Import & Validation', () => {
       tournamentId,
       teamId: team1._id,
       bidderId: owner1User._id,
-      bidAmount: 500000,
+      bidAmount: 10,
       idempotencyKey: 'import_sold_bid',
     });
     await markPlayerSold(tournamentId, adminUser._id);
@@ -397,7 +398,7 @@ describe('5. Player Import & Validation', () => {
       {
         name: player1.name,
         role: 'Bowler',
-        basePrice: 50000,
+        basePrice: 2,
         isSoldAlready: true,
       },
     ];
@@ -412,6 +413,51 @@ describe('5. Player Import & Validation', () => {
     // Verify player1 remains sold with original price
     const checkPlayer = await Player.findById(player1._id);
     expect(checkPlayer.status).toBe('sold');
-    expect(checkPlayer.soldPrice).toBe(500000);
+    expect(checkPlayer.soldPrice).toBe(10);
+  });
+});
+
+describe('7. CricHeroes Scraping & Mathematical Purse Infeasibility Warning', () => {
+  it('returns "nan" stats when phone number is invalid or not listed', async () => {
+    const stats = await fetchCricHeroesStatsByPhone('123', 'Dummy Player');
+    expect(stats.matches).toBe('nan');
+    expect(stats.runs).toBe('nan');
+    expect(stats.wickets).toBe('nan');
+    expect(stats.strikeRate).toBe('nan');
+    expect(stats.economy).toBe('nan');
+  });
+
+  it('correctly calculates mathematical purse deficit when bid jeopardizes minimum squad', () => {
+    // 0 players purchased, remainingPurse = 100 Credits
+    // minSquadSize = 11, minBasePrice = 1 Credit
+    // If bidding 95 Credits, leaves 5 Credits
+    // 10 players needed * 1 Credit = 10 Credits reserve required
+    // Deficit = 5 Credits -> isFeasible: false
+    const feasibility = checkPurseFeasibility({
+      remainingPurse: 100,
+      purchasedCount: 0,
+      bidAmount: 95,
+      minSquadSize: 11,
+      minBasePrice: 1,
+    });
+
+    expect(feasibility.isFeasible).toBe(false);
+    expect(feasibility.deficit).toBe(5);
+    expect(feasibility.warning).toContain('Mathematical Purse Deficit Warning');
+    expect(feasibility.maxSafeBid).toBe(90); // 100 - (10 * 1)
+  });
+
+  it('marks bid as feasible when remaining purse comfortably covers minimum base reserve', () => {
+    const feasibility = checkPurseFeasibility({
+      remainingPurse: 100, // 100 Credits
+      purchasedCount: 2,
+      bidAmount: 20, // 20 Credits
+      minSquadSize: 11,
+      minBasePrice: 1,
+    });
+
+    expect(feasibility.isFeasible).toBe(true);
+    expect(feasibility.deficit).toBe(0);
+    expect(feasibility.warning).toBeNull();
   });
 });

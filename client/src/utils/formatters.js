@@ -1,34 +1,27 @@
 /**
- * Indian Rupee & Display Formatters
+ * Tournament Credits & Display Formatters
+ * Formats values into tournament credits (e.g. 100 Credits / 100 CR)
  */
 
-const inrFormatter = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 0,
-});
+export function formatCredits(amount, compact = false) {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return compact ? '0 CR' : '0 Credits';
+  }
+  const val = Number(amount);
+  const formatted = val % 1 === 0 ? val : val.toFixed(1);
+  if (compact) {
+    return `${formatted} CR`;
+  }
+  return `${formatted} ${val === 1 ? 'Credit' : 'Credits'}`;
+}
 
+// Backward-compatible aliases so all existing page components render credits seamlessly
 export function formatINR(amount) {
-  if (amount === null || amount === undefined || isNaN(amount)) return '₹0';
-  return inrFormatter.format(Math.round(amount));
+  return formatCredits(amount, false);
 }
 
 export function formatINRCompact(amount) {
-  if (amount === null || amount === undefined || isNaN(amount)) return '₹0';
-  const val = Math.round(amount);
-  if (val >= 10000000) {
-    const cr = val / 10000000;
-    return `₹${cr % 1 === 0 ? cr.toFixed(0) : cr.toFixed(2)} Cr`;
-  }
-  if (val >= 100000) {
-    const lk = val / 100000;
-    return `₹${lk % 1 === 0 ? lk.toFixed(0) : lk.toFixed(1)} Lakh`;
-  }
-  if (val >= 1000) {
-    const k = val / 1000;
-    return `₹${k % 1 === 0 ? k.toFixed(0) : k.toFixed(0)} K`;
-  }
-  return `₹${val}`;
+  return formatCredits(amount, true);
 }
 
 export function formatSeconds(sec) {

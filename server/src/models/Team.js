@@ -26,6 +26,12 @@ const teamSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    captainName: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 100,
+    },
     primaryColor: {
       type: String,
       default: '#3B82F6', // Blue default

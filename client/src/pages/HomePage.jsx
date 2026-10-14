@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Calendar,
   Sparkles,
+  Crown,
 } from 'lucide-react';
 import api from '../services/api';
 import { formatINR, formatINRCompact } from '../utils/formatters';
@@ -78,15 +79,15 @@ export default function HomePage() {
           </div>
 
           <h1 className="font-display font-black text-4xl sm:text-6xl lg:text-7xl tracking-tight text-white leading-none">
-            CAMPUS PREMIER LEAGUE
+            {tournament?.name ? tournament.name.split('-')[0].trim() : 'MAIDAN KE SULTAN'}
             <span className="block gold-gradient-text mt-2 font-extrabold text-3xl sm:text-5xl lg:text-6xl">
-              LIVE PLAYER AUCTION
+              SEASON 5 LIVE AUCTION
             </span>
           </h1>
 
           <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            The ultimate collegiate cricket battleground. Six prestigious franchises compete in real-time
-            bidding to construct their championship squads under strict purse and roster rules.
+            The ultimate cricket battleground. Five fierce franchises compete in real-time
+            bidding to construct their championship squads with real-time bidding and strict purse management.
           </p>
 
           {/* Action CTAs */}
@@ -104,7 +105,7 @@ export default function HomePage() {
               to="/teams"
               className="px-6 py-4 rounded-xl bg-cpl-surface border border-cpl-border hover:border-cpl-gold text-slate-200 hover:text-white font-bold text-sm tracking-wider uppercase transition-colors"
             >
-              View 6 Franchises
+              View 5 Franchises
             </Link>
           </div>
 
@@ -116,9 +117,9 @@ export default function HomePage() {
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
           <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Registered Players</span>
           <div className="text-3xl font-display font-black text-white mt-1">
-            {summary?.totalPlayers ?? 32}
+            {summary?.totalPlayers ?? 15}
           </div>
-          <span className="text-[11px] text-slate-500 mt-1 block">Full Collegiate Pool</span>
+          <span className="text-[11px] text-slate-500 mt-1 block">Official Tournament Pool</span>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
@@ -127,16 +128,16 @@ export default function HomePage() {
             {summary?.soldPlayers ?? 0}
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block">
-            {summary?.availablePlayers ?? 32} Available
+            {summary?.availablePlayers ?? 15} Available
           </span>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
           <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Participating Teams</span>
           <div className="text-3xl font-display font-black text-cpl-gold mt-1">
-            {teams?.length || 6}
+            {teams?.length || 5}
           </div>
-          <span className="text-[11px] text-slate-500 mt-1 block">₹1.00 Cr Purse Each</span>
+          <span className="text-[11px] text-slate-500 mt-1 block">100 Credits Purse Each</span>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
@@ -148,12 +149,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Six Teams Showcase */}
+      {/* Five Teams Showcase */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display font-black text-2xl text-white">The Six Franchises</h2>
-            <p className="text-xs text-slate-400">Official collegiate teams participating in Campus Premier League 2026</p>
+            <h2 className="font-display font-black text-2xl text-white">The 5 Franchises</h2>
+            <p className="text-xs text-slate-400">Official teams participating in Maidan ke Sultan (Season 5)</p>
           </div>
           <Link to="/teams" className="text-cpl-gold hover:underline text-xs font-bold uppercase tracking-wider flex items-center gap-1">
             <span>All Rosters</span>
@@ -162,7 +163,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {(teams || []).slice(0, 6).map((team) => (
+          {(teams || []).map((team) => (
             <div
               key={team._id}
               className="glass-panel glass-panel-hover p-6 rounded-2xl border border-cpl-border relative overflow-hidden"
@@ -187,6 +188,12 @@ export default function HomePage() {
                   <p className="text-xs text-slate-400">
                     Owner: {team.ownerUserId?.name || 'Assigned Owner'}
                   </p>
+                  {team.captainName && (
+                    <p className="text-[11px] text-amber-300 font-bold flex items-center gap-1 mt-0.5">
+                      <Crown className="w-3 h-3 text-cpl-gold shrink-0" />
+                      <span>Captain: {team.captainName}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -275,15 +282,15 @@ export default function HomePage() {
           <div className="space-y-2">
             <h4 className="font-bold text-white text-sm">1. Purse & Squad Limits</h4>
             <p>
-              Each of the 6 participating franchises starts with an authoritative purse of ₹1,00,00,000 (1 Crore).
+              Each participating franchise starts with an authoritative purse of 100 Credits.
               Teams may draft up to 15 players with a minimum squad requirement of 11.
             </p>
           </div>
           <div className="space-y-2">
             <h4 className="font-bold text-white text-sm">2. Authoritative Bidding</h4>
             <p>
-              Opening bids must match or exceed the player's base price. Subsequent bids increase by configured
-              increments (₹50,000 minimum). Teams cannot bid more than their available remaining purse.
+              Opening bids must match or exceed the player's credit base price. Subsequent bids increase by configured
+              credit increments (1 Credit minimum). Teams cannot bid more than their available remaining purse.
             </p>
           </div>
           <div className="space-y-2">

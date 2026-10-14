@@ -15,6 +15,8 @@ export default function LiveBiddingWidget() {
     tournament,
     bidError,
     clearBidError,
+    feasibilityWarning,
+    clearFeasibilityWarning,
     isConnected,
   } = useAuction();
 
@@ -23,7 +25,7 @@ export default function LiveBiddingWidget() {
 
   const currentBid = session?.currentBid || 0;
   const basePrice = currentPlayer?.basePrice || 0;
-  const minIncrement = tournament?.minBidIncrement || 50000;
+  const minIncrement = tournament?.minBidIncrement || 1;
 
   // Next minimum valid bid calculation
   const nextMinBid = currentBid <= 0 ? Math.max(1, basePrice) : currentBid + minIncrement;
@@ -34,8 +36,17 @@ export default function LiveBiddingWidget() {
     (typeof session.leadingTeam === 'object' ? session.leadingTeam._id?.toString() : session.leadingTeam.toString()) === myTeamId.toString()
   );
 
-  // Available purse of user's team
-  const availablePurse = assignedTeam?.remainingPurse ?? 10000000;
+  // Available purse of user's team & Squad Feasibility
+  const availablePurse = assignedTeam?.remainingPurse ?? 100;
+  const minSquadSize = tournament?.minSquadSize || 11;
+  const minBasePrice = tournament?.minBasePrice || 1;
+  const myPurchasedCount = assignedTeam?.purchasedCount ?? (assignedTeam?.squad?.length || 0);
+  const futureSlotsNeeded = Math.max(0, minSquadSize - (myPurchasedCount + 1));
+  const futureReserveRequired = futureSlotsNeeded * minBasePrice;
+  const maxSafeBid = Math.max(0, availablePurse - futureReserveRequired);
+
+  const proposedBid = customBidInput ? Number(customBidInput.replace(/[^0-9]/g, '')) : nextMinBid;
+  const willTriggerDeficit = proposedBid > maxSafeBid && availablePurse >= proposedBid;
 
   // Countdown urgency
   const isUrgentTimer = remainingSeconds <= 5 && remainingSeconds > 0;
@@ -88,7 +99,7 @@ export default function LiveBiddingWidget() {
       </div>
 
       {/* Middle Status: Leading Team or Alert */}
-      <div className="py-4">
+      <div className="py-4 space-y-2.5">
         {isLeading ? (
           <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-emerald-300">
             <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -100,11 +111,42 @@ export default function LiveBiddingWidget() {
             <span className="text-xs font-bold">Timer expired! Awaiting auctioneer confirmation.</span>
           </div>
         ) : (
-          <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
             <span>Increment Step: <strong className="text-white font-bold">{formatINR(minIncrement)}</strong></span>
             {assignedTeam && (
-              <span>Your Purse: <strong className="text-cpl-gold font-bold">{formatINR(availablePurse)}</strong></span>
+              <div className="flex items-center gap-3">
+                <span>Purse: <strong className="text-cpl-gold font-bold">{formatINR(availablePurse)}</strong></span>
+                <span className="text-slate-500">|</span>
+                <span>Max Safe: <strong className="text-emerald-400 font-bold">{formatINR(maxSafeBid)}</strong></span>
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Real-time Authoritative Feasibility Warning Broadcast from Socket */}
+        {feasibilityWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 flex items-start gap-2.5"
+          >
+            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              <span className="font-extrabold uppercase tracking-wide block text-[10px] text-red-400 mb-0.5">
+                Mathematical Squad Deficit Warning
+              </span>
+              <span>{feasibilityWarning}</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Pre-bid Warning for Current User's Franchise */}
+        {!isLeading && willTriggerDeficit && isTeamOwner && (
+          <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Squad Caution:</strong> Bidding {formatINR(proposedBid)} leaves only {formatINR(availablePurse - proposedBid)}, below the {formatINR(futureReserveRequired)} required to complete min squad ({minSquadSize} players at base price {formatINR(minBasePrice)}).
+            </span>
           </div>
         )}
       </div>
@@ -116,7 +158,7 @@ export default function LiveBiddingWidget() {
           {/* Quick Bid Buttons */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             
-            {/* Next Min Bid (+₹50k or Base) */}
+            {/* Next Min Bid */}
             <button
               onClick={() => handleQuickBid(nextMinBid)}
               disabled={submitting || isLeading || !currentPlayer || session?.status !== 'active' || availablePurse < nextMinBid}
@@ -126,24 +168,24 @@ export default function LiveBiddingWidget() {
               <span>{formatINR(nextMinBid)}</span>
             </button>
 
-            {/* Quick +₹1,00,000 */}
+            {/* Quick +1 CR */}
             <button
-              onClick={() => handleQuickBid(nextMinBid + 50000)}
-              disabled={submitting || isLeading || !currentPlayer || session?.status !== 'active' || availablePurse < (nextMinBid + 50000)}
+              onClick={() => handleQuickBid(nextMinBid + 1)}
+              disabled={submitting || isLeading || !currentPlayer || session?.status !== 'active' || availablePurse < (nextMinBid + 1)}
               className="p-3 rounded-xl bg-cpl-surface border border-cpl-border text-white font-bold text-sm hover:border-cpl-gold/50 hover:bg-cpl-surface/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex flex-col items-center justify-center"
             >
-              <span className="text-[10px] uppercase tracking-wider text-cpl-gold font-bold">+₹50,000 More</span>
-              <span>{formatINR(nextMinBid + 50000)}</span>
+              <span className="text-[10px] uppercase tracking-wider text-cpl-gold font-bold">+1 CR More</span>
+              <span>{formatINR(nextMinBid + 1)}</span>
             </button>
 
-            {/* Quick +₹2,00,000 */}
+            {/* Quick +2 CR */}
             <button
-              onClick={() => handleQuickBid(nextMinBid + 100000)}
-              disabled={submitting || isLeading || !currentPlayer || session?.status !== 'active' || availablePurse < (nextMinBid + 100000)}
+              onClick={() => handleQuickBid(nextMinBid + 2)}
+              disabled={submitting || isLeading || !currentPlayer || session?.status !== 'active' || availablePurse < (nextMinBid + 2)}
               className="p-3 rounded-xl bg-cpl-surface border border-cpl-border text-white font-bold text-sm hover:border-cpl-gold/50 hover:bg-cpl-surface/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex flex-col items-center justify-center col-span-2 sm:col-span-1"
             >
-              <span className="text-[10px] uppercase tracking-wider text-cpl-gold font-bold">+₹1,00,000 More</span>
-              <span>{formatINR(nextMinBid + 100000)}</span>
+              <span className="text-[10px] uppercase tracking-wider text-cpl-gold font-bold">+2 CR More</span>
+              <span>{formatINR(nextMinBid + 2)}</span>
             </button>
 
           </div>
@@ -151,16 +193,16 @@ export default function LiveBiddingWidget() {
           {/* Custom Bid Input Form */}
           <form onSubmit={handleCustomSubmit} className="flex gap-2">
             <div className="relative flex-1">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">₹</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">CR</span>
               <input
                 type="number"
-                step="1000"
+                step="1"
                 min={nextMinBid}
                 value={customBidInput}
                 onChange={(e) => setCustomBidInput(e.target.value)}
                 placeholder={`Custom Bid (Min ${formatINR(nextMinBid)})`}
                 disabled={submitting || isLeading || !currentPlayer || session?.status !== 'active'}
-                className="w-full bg-cpl-surface border border-cpl-border rounded-xl pl-8 pr-4 py-2.5 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-cpl-gold disabled:opacity-50"
+                className="w-full bg-cpl-surface border border-cpl-border rounded-xl pl-9 pr-4 py-2.5 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-cpl-gold disabled:opacity-50"
               />
             </div>
             <button

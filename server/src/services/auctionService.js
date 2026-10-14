@@ -21,6 +21,42 @@ export function calculateNextMinBid(currentBid, basePrice, minIncrement = DEFAUL
 }
 
 /**
+ * Checks if a team can mathematically complete its minimum squad if it places a bid.
+ * Purse after bid must be >= remaining slots needed * minBasePrice.
+ */
+export function checkPurseFeasibility({
+  remainingPurse,
+  purchasedCount,
+  bidAmount,
+  minSquadSize = 11,
+  minBasePrice = DEFAULT_CONFIG.DEFAULT_MIN_BASE_PRICE || 1,
+}) {
+  const newCount = purchasedCount + 1;
+  const remainingSlotsNeeded = Math.max(0, minSquadSize - newCount);
+  const minRequiredReserve = remainingSlotsNeeded * minBasePrice;
+  const purseAfterBid = remainingPurse - bidAmount;
+
+  const isFeasible = purseAfterBid >= minRequiredReserve;
+  const deficit = isFeasible ? 0 : minRequiredReserve - purseAfterBid;
+  const maxSafeBid = Math.max(
+    0,
+    remainingPurse - Math.max(0, minSquadSize - purchasedCount - 1) * minBasePrice
+  );
+
+  return {
+    isFeasible,
+    remainingSlotsNeeded,
+    minRequiredReserve,
+    purseAfterBid,
+    deficit,
+    maxSafeBid,
+    warning: isFeasible
+      ? null
+      : `Mathematical Purse Deficit Warning: Bidding ${bidAmount} Credits leaves only ${purseAfterBid} Credits in purse, but the team needs at least ${minRequiredReserve} Credits reserve to afford the remaining ${remainingSlotsNeeded} player(s) required to complete the minimum squad of ${minSquadSize} (at min base price ${minBasePrice} Credit(s) each).`,
+  };
+}
+
+/**
  * Retrieve or initialize the authoritative AuctionSession for a tournament
  */
 export async function getOrCreateSession(tournamentId) {
@@ -229,6 +265,17 @@ export async function placeBid({
     isAccepted: true,
   });
 
+  // Check mathematical purse feasibility for completing squad
+  const minBasePrice = tournament.minBasePrice || DEFAULT_CONFIG.DEFAULT_MIN_BASE_PRICE || 1;
+  const minSquadSize = tournament.minSquadSize || DEFAULT_CONFIG.MIN_SQUAD_LIMIT || 11;
+  const feasibility = checkPurseFeasibility({
+    remainingPurse: team.remainingPurse,
+    purchasedCount,
+    bidAmount,
+    minSquadSize,
+    minBasePrice,
+  });
+
   // 7. Record Auction Event
   await AuctionEvent.create({
     eventType: EVENT_TYPES.BID_ACCEPTED,
@@ -241,6 +288,7 @@ export async function placeBid({
       teamName: team.name,
       teamShortCode: team.shortCode,
       deadline: newDeadline,
+      feasibility,
     },
     sessionVersion: updatedSession.sessionVersion,
   });
@@ -254,6 +302,7 @@ export async function placeBid({
     bid: bidDoc,
     session: populatedSession,
     alreadyProcessed: false,
+    feasibility,
   };
 }
 

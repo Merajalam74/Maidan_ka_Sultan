@@ -1,6 +1,6 @@
 import Player from '../models/Player.js';
 import Tournament from '../models/Tournament.js';
-import { parseCsvRows, previewPlayerImport, commitPlayerImport } from '../services/playerService.js';
+import { parseCsvRows, previewPlayerImport, commitPlayerImport, getCompositeKey } from '../services/playerService.js';
 import { fetchGoogleSheetAsCsv } from '../services/googleSheetsService.js';
 import { PLAYER_STATUS } from '../config/constants.js';
 
@@ -90,9 +90,10 @@ export async function getPlayerById(req, res, next) {
  */
 export async function createPlayer(req, res, next) {
   try {
-    const {
+    let {
       tournamentId,
       name,
+      phoneNumber,
       role,
       basePrice,
       photoUrl,
@@ -112,9 +113,32 @@ export async function createPlayer(req, res, next) {
       });
     }
 
+    if (!tournamentId) {
+      const activeTournament = await Tournament.findOne().sort({ createdAt: -1 });
+      if (activeTournament) tournamentId = activeTournament._id;
+    }
+
+    // 4-Factor composite duplicate check (Mobile + Name + Year + Branch)
+    const compositeKey = getCompositeKey(phoneNumber, name, academicYear, department);
+    const existingPlayers = await Player.find({ tournamentId });
+    const duplicate = existingPlayers.find(
+      (p) => getCompositeKey(p.phoneNumber, p.name, p.academicYear, p.department) === compositeKey
+    );
+
+    if (duplicate) {
+      return res.status(409).json({
+        success: false,
+        message: `Duplicate player detected: A player matching mobile number, name, academic year, and branch (${duplicate.name} - ${duplicate.department}) already exists.`,
+      });
+    }
+
+    const count = await Player.countDocuments({ tournamentId });
+    const extId = externalId || `MKS-P${String(count + 1).padStart(2, '0')}`;
+
     const player = await Player.create({
       tournamentId,
       name: name.trim(),
+      phoneNumber: phoneNumber || '',
       role,
       basePrice: Number(basePrice),
       photoUrl: photoUrl || '',
@@ -123,16 +147,79 @@ export async function createPlayer(req, res, next) {
       battingStyle: battingStyle || 'Right-hand bat',
       bowlingStyle: bowlingStyle || 'Right-arm medium',
       category: category || 'Category A',
-      externalId: externalId || '',
+      externalId: extId,
+      nominationOrder: count + 1,
       notes: notes || '',
+      stats: { matches: 'nan', runs: 'nan', wickets: 'nan', strikeRate: 'nan', economy: 'nan' },
       status: PLAYER_STATUS.AVAILABLE,
     });
 
     return res.status(201).json({
       success: true,
       player,
-      message: 'Player created successfully.',
+      message: 'Player registered successfully.',
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Export all tournament players to CSV (Google Form / Spreadsheet ready)
+ */
+export async function exportPlayersCsv(req, res, next) {
+  try {
+    let tournamentId = req.query.tournamentId;
+    if (!tournamentId) {
+      const active = await Tournament.findOne().sort({ createdAt: -1 });
+      if (active) tournamentId = active._id;
+    }
+
+    const players = await Player.find({ tournamentId })
+      .populate('winningTeamId', 'name shortCode')
+      .sort({ nominationOrder: 1, createdAt: 1 });
+
+    const header = [
+      'Player ID',
+      'Full Name',
+      'Phone Number',
+      'Playing Role',
+      'Batting Style',
+      'Bowling Style',
+      'Department',
+      'Academic Year',
+      'Category',
+      'Base Price (Credits)',
+      'Status',
+      'Sold Price (Credits)',
+      'Winning Team',
+      'Photo URL',
+    ];
+
+    const rows = players.map((p) => {
+      const team = p.winningTeamId || {};
+      return [
+        `"${p.externalId || ''}"`,
+        `"${p.name || ''}"`,
+        `"${p.phoneNumber || ''}"`,
+        `"${p.role || ''}"`,
+        `"${p.battingStyle || ''}"`,
+        `"${p.bowlingStyle || ''}"`,
+        `"${p.department || ''}"`,
+        `"${p.academicYear || ''}"`,
+        `"${p.category || ''}"`,
+        p.basePrice || 0,
+        `"${p.status || 'available'}"`,
+        p.soldPrice || 0,
+        `"${team.name || ''}"`,
+        `"${p.photoUrl || ''}"`,
+      ].join(',');
+    });
+
+    const csvContent = [header.join(','), ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="maidan_ke_sultan_players.csv"');
+    return res.send(csvContent);
   } catch (err) {
     next(err);
   }
@@ -292,3 +379,21 @@ export async function confirmImport(req, res, next) {
     next(err);
   }
 }
+
+/**
+ * Lookup CricHeroes stats by phone number
+ */
+export async function lookupCricHeroes(req, res, next) {
+  try {
+    const { phoneNumber, name } = req.body;
+    const { fetchCricHeroesStatsByPhone } = await import('../services/cricheroesService.js');
+    const stats = await fetchCricHeroesStatsByPhone(phoneNumber, name);
+    return res.json({
+      success: true,
+      stats,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+

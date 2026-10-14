@@ -156,19 +156,26 @@ export async function getMe(req, res, next) {
 export async function getDemoAccounts(req, res, next) {
   try {
     const users = await User.find({
-      email: {
-        $in: [
-          'admin@cpl.edu',
-          'auctioneer@cpl.edu',
-          'owner1@cpl.edu',
-          'owner2@cpl.edu',
-          'owner3@cpl.edu',
-          'owner4@cpl.edu',
-          'owner5@cpl.edu',
-          'owner6@cpl.edu',
-        ],
-      },
-    }).select('name email globalRole avatar');
+      $or: [
+        {
+          email: {
+            $in: [
+              'admin@mks.edu',
+              'auctioneer@mks.edu',
+              'jebkatre@mks.edu',
+              'maqsad@mks.edu',
+              'khalnayak@mks.edu',
+              'phurtile@mks.edu',
+              'dhurandar@mks.edu',
+              'admin@cpl.edu',
+              'auctioneer@cpl.edu',
+              'owner1@cpl.edu',
+            ],
+          },
+        },
+        { globalRole: { $in: [ROLES.SUPERADMIN, ROLES.AUCTIONEER, ROLES.TEAM_OWNER] } },
+      ],
+    }).limit(10).select('name email globalRole avatar');
 
     const teams = await Team.find({}).select('name shortCode ownerUserId logoUrl primaryColor');
     const teamMap = new Map();
@@ -178,6 +185,8 @@ export async function getDemoAccounts(req, res, next) {
 
     const demoList = users.map((u) => {
       const assigned = teamMap.get(u._id.toString());
+      const isSuper = u.globalRole === ROLES.SUPERADMIN || u.email.startsWith('admin');
+      const isAuct = u.globalRole === ROLES.AUCTIONEER || u.email.startsWith('auction');
       return {
         id: u._id,
         name: u.name,
@@ -186,13 +195,55 @@ export async function getDemoAccounts(req, res, next) {
         teamName: assigned ? assigned.name : null,
         teamShortCode: assigned ? assigned.shortCode : null,
         teamLogo: assigned ? assigned.logoUrl : null,
-        defaultPassword: u.email === 'admin@cpl.edu' ? 'Admin@123456' : u.email === 'auctioneer@cpl.edu' ? 'Auctioneer@123456' : 'Owner@123456',
+        defaultPassword: isSuper ? 'Admin@123456' : isAuct ? 'Auctioneer@123456' : 'Owner@123456',
       };
     });
 
     return res.json({
       success: true,
       demoAccounts: demoList,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Change password for authenticated user (e.g. Team Owner)
+ */
+export async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.trim().length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long.',
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // If current password provided, verify it
+    if (currentPassword) {
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password does not match.',
+        });
+      }
+    }
+
+    user.passwordHash = await User.hashPassword(newPassword.trim());
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Password updated successfully.',
     });
   } catch (err) {
     next(err);

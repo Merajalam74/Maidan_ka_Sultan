@@ -20,6 +20,7 @@ export function AuctionSocketProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [bidError, setBidError] = useState(null);
+  const [feasibilityWarning, setFeasibilityWarning] = useState(null);
   const [soldCelebration, setSoldCelebration] = useState(null);
 
   // Fetch initial state via REST
@@ -77,6 +78,11 @@ export function AuctionSocketProvider({ children }) {
     const onBidAccepted = (data) => {
       playBidChime();
       setBidError(null);
+      if (data.feasibility && !data.feasibility.isFeasible) {
+        setFeasibilityWarning(data.feasibility.warning);
+      } else {
+        setFeasibilityWarning(null);
+      }
       if (data.session) {
         setSession(data.session);
       }
@@ -262,6 +268,7 @@ export function AuctionSocketProvider({ children }) {
         isConnected,
         loading,
         bidError,
+        feasibilityWarning,
         soldCelebration,
         placeBid,
         nominate,
@@ -273,6 +280,7 @@ export function AuctionSocketProvider({ children }) {
         cancelNomination,
         refreshState: fetchLiveState,
         clearBidError: () => setBidError(null),
+        clearFeasibilityWarning: () => setFeasibilityWarning(null),
       }}
     >
       {children}

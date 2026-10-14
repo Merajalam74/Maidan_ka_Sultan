@@ -54,21 +54,21 @@ export const EVENT_TYPES = Object.freeze({
 });
 
 export const DEFAULT_CONFIG = Object.freeze({
-  DEFAULT_PURSE: 10000000, // ₹1,00,00,000 (1 Crore)
+  DEFAULT_PURSE: 100, // 100 Credits per team
   DEFAULT_SQUAD_LIMIT: 15,
   MIN_SQUAD_LIMIT: 11,
   DEFAULT_COUNTDOWN_SECONDS: 30,
   ANTI_SNIPING_WINDOW_SECONDS: 10,
   ANTI_SNIPING_EXTENSION_SECONDS: 15,
-  DEFAULT_MIN_BID_INCREMENT: 50000, // ₹50,000
-  CURRENCY: 'INR',
-  CURRENCY_SYMBOL: '₹',
+  DEFAULT_MIN_BID_INCREMENT: 1, // 1 Credit minimum increment
+  DEFAULT_MIN_BASE_PRICE: 2, // 2 Credits minimum base price
+  CURRENCY: 'CREDITS',
+  CURRENCY_SYMBOL: 'CR',
 });
 
-// Standard Tiered Bid Increments in INR
+// Standard Tiered Bid Increments in Credits
 export const DEFAULT_BID_TIERS = Object.freeze([
-  { maxAmount: 1000000, increment: 25000 },    // Up to 10 Lakh: +25k
-  { maxAmount: 2500000, increment: 50000 },    // 10L - 25L: +50k
-  { maxAmount: 5000000, increment: 100000 },   // 25L - 50L: +1 Lakh
-  { maxAmount: Infinity, increment: 200000 },  // Above 50L: +2 Lakh
+  { maxAmount: 20, increment: 1 },    // Up to 20 Credits: +1 Credit
+  { maxAmount: 50, increment: 2 },    // 20 - 50 Credits: +2 Credits
+  { maxAmount: Infinity, increment: 5 }, // Above 50 Credits: +5 Credits
 ]);

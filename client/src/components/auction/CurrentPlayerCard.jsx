@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Sparkles, User, Award, Activity } from 'lucide-react';
+import { Shield, Sparkles, User, Award } from 'lucide-react';
 import { formatINR } from '../../utils/formatters';
 
 export default function CurrentPlayerCard({ player, session, leadingTeam }) {
@@ -98,28 +98,31 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
               )}
             </div>
 
-            {/* Player Name */}
-            <h2 className="font-display font-extrabold text-2xl sm:text-3xl lg:text-4xl text-white tracking-wide">
-              {player.name}
-            </h2>
+            {/* Player Name & Contact */}
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-display font-extrabold text-2xl sm:text-3xl lg:text-4xl text-white tracking-wide">
+                {player.name}
+              </h2>
+              {player.phoneNumber && (
+                <span className="text-xs font-mono font-medium text-slate-400 bg-cpl-surface/80 px-2.5 py-1 rounded-md border border-cpl-border">
+                  📱 {player.phoneNumber}
+                </span>
+              )}
+            </div>
 
-            {/* Performance Stats Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
-              <div className="p-2.5 rounded-xl bg-cpl-surface/80 border border-cpl-border/80 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Matches</span>
-                <span className="text-base font-extrabold text-white">{player.stats?.matches || 0}</span>
+            {/* Academic & Profile Details */}
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <div className="px-3 py-1.5 rounded-lg bg-cpl-surface/80 border border-cpl-border text-slate-300">
+                <span className="text-slate-500 font-bold block text-[10px] uppercase">Category</span>
+                <span className="font-semibold text-white">{player.category || 'Category A'}</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-cpl-surface/80 border border-cpl-border/80 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Runs</span>
-                <span className="text-base font-extrabold text-white">{player.stats?.runs || 0}</span>
+              <div className="px-3 py-1.5 rounded-lg bg-cpl-surface/80 border border-cpl-border text-slate-300">
+                <span className="text-slate-500 font-bold block text-[10px] uppercase">Branch / Dept</span>
+                <span className="font-semibold text-white">{player.department || 'General'}</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-cpl-surface/80 border border-cpl-border/80 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Wickets</span>
-                <span className="text-base font-extrabold text-white">{player.stats?.wickets || 0}</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-cpl-surface/80 border border-cpl-border/80 text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Strike Rate</span>
-                <span className="text-base font-extrabold text-white">{player.stats?.strikeRate || 0}</span>
+              <div className="px-3 py-1.5 rounded-lg bg-cpl-surface/80 border border-cpl-border text-slate-300">
+                <span className="text-slate-500 font-bold block text-[10px] uppercase">Academic Year</span>
+                <span className="font-semibold text-white">{player.academicYear || 'N/A'}</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Play,
   Pause,
@@ -176,38 +177,63 @@ export default function AuctioneerControlBar({ onOpenNominationModal }) {
 
       </div>
 
-      {/* Confirmation Modal */}
-      {confirmModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-cpl-surface border border-cpl-gold/50 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      {/* Confirmation Modal (rendered via portal to prevent backdrop-filter stacking containment) */}
+      {confirmModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div
+            className="bg-cpl-surface border border-cpl-gold/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-xl bg-amber-500/20 text-cpl-gold">
+              <div className={`p-3 rounded-xl ${
+                confirmModal.type === 'sold'
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : confirmModal.type === 'unsold'
+                  ? 'bg-red-500/20 text-red-400'
+                  : 'bg-amber-500/20 text-cpl-gold'
+              }`}>
                 <AlertTriangle className="w-6 h-6" />
               </div>
-              <h3 className="font-display font-extrabold text-lg text-white">
-                {confirmModal.title}
-              </h3>
+              <div>
+                <h3 className="font-display font-extrabold text-lg text-white">
+                  {confirmModal.title}
+                </h3>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                  AUCTIONEER CONSOLE
+                </span>
+              </div>
             </div>
+
             <p className="text-sm text-slate-300 leading-relaxed mb-6">
               {confirmModal.message}
             </p>
-            <div className="flex items-center justify-end gap-3">
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-cpl-border/60">
               <button
+                type="button"
                 onClick={() => setConfirmModal(null)}
-                className="px-4 py-2 rounded-xl bg-cpl-surface border border-cpl-border text-slate-300 hover:text-white font-bold text-xs uppercase"
+                className="px-4 py-2.5 rounded-xl bg-cpl-dark hover:bg-cpl-border border border-cpl-border text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => handleAction(confirmModal.action, confirmModal.type)}
                 disabled={busy}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-cpl-gold to-cpl-gold-dark text-black font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110"
+                className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all ${
+                  confirmModal.type === 'sold'
+                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/25'
+                    : confirmModal.type === 'unsold'
+                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-500/25'
+                    : 'bg-gradient-to-r from-cpl-gold to-cpl-gold-dark text-black hover:brightness-110 shadow-cpl-gold/25'
+                }`}
               >
                 {busy ? 'Processing...' : 'Confirm Action'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

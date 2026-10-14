@@ -15,12 +15,12 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="w-6 h-6 text-cpl-gold" />
               <span className="font-display font-black text-lg text-white tracking-wider">
-                CAMPUS PREMIER LEAGUE
+                MAIDAN KE SULTAN — SEASON 5
               </span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed max-w-md">
-              The premier televised-style college cricket tournament auction system. Real-time synchronized bidding,
-              authoritative purse calculations in Indian Rupees (₹), and official tournament roster management.
+              The premier collegiate cricket tournament live auction system. Real-time synchronized bidding,
+              authoritative purse calculations in tournament credits, and official tournament roster management.
             </p>
             <div className="flex items-center gap-3 mt-4 text-xs">
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -29,7 +29,7 @@ export default function Footer() {
               </span>
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <Zap className="w-3.5 h-3.5" />
-                <span>Sub-second WebSockets</span>
+                <span>Real-Time Bidding</span>
               </span>
             </div>
           </div>
@@ -39,9 +39,9 @@ export default function Footer() {
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-200 mb-3">Tournament Arena</h4>
             <ul className="space-y-2 text-sm">
               <li><a href="/live" className="hover:text-cpl-gold transition-colors">Live Scoreboard</a></li>
-              <li><a href="/teams" className="hover:text-cpl-gold transition-colors">6 Franchise Rosters</a></li>
+              <li><a href="/teams" className="hover:text-cpl-gold transition-colors">Franchise Rosters</a></li>
               <li><a href="/players" className="hover:text-cpl-gold transition-colors">Registered Player Pool</a></li>
-              <li><a href="/history" className="hover:text-cpl-gold transition-colors">Bid Records & Reports</a></li>
+              <li><a href="/history" className="hover:text-cpl-gold transition-colors">Auction History & Logs</a></li>
             </ul>
           </div>
 
@@ -70,7 +70,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-cpl-border/50 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
-          <p>© 2026 Campus Premier League. All tournament rights reserved.</p>
+          <p>© 2026 Maidan ke Sultan (Season 5). All tournament rights reserved.</p>
           <p className="mt-2 sm:mt-0">Production-Ready Full-Stack Cricket Auction Engine</p>
         </div>
       </div>

@@ -7,7 +7,7 @@ const tournamentSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Tournament name is required'],
       trim: true,
-      default: 'Campus Premier League 2026',
+      default: 'Maidan ke Sultan - Season 5',
     },
     status: {
       type: String,
@@ -26,6 +26,11 @@ const tournamentSchema = new mongoose.Schema(
       type: Number,
       default: DEFAULT_CONFIG.DEFAULT_PURSE,
       min: [1, 'Purse must be positive'],
+    },
+    minBasePrice: {
+      type: Number,
+      default: DEFAULT_CONFIG.DEFAULT_MIN_BASE_PRICE || 2, // 2 Credits minimum player base price
+      min: 1,
     },
     minBidIncrement: {
       type: Number,

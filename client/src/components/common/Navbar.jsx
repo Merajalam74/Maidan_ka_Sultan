@@ -17,9 +17,9 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Live Auction', path: '/live', highlight: true },
-    { name: 'Teams & Rosters', path: '/teams' },
+    { name: 'Franchises', path: '/teams' },
     { name: 'Players Pool', path: '/players' },
-    { name: 'History & Stats', path: '/history' },
+    { name: 'Auction History', path: '/history' },
   ];
 
   return (
@@ -37,13 +37,13 @@ export default function Navbar() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display font-extrabold text-xl tracking-wider text-white">
-                  CAMPUS PREMIER LEAGUE
+                  MAIDAN KE SULTAN
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-cpl-gold/15 text-cpl-gold border border-cpl-gold/30">
-                  AUCTION
+                  SEASON 5
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">Official College Cricket Live Bidding Platform</p>
+              <p className="text-xs text-slate-400 font-medium">Official 5-Team Cricket Live Player Auction Platform</p>
             </div>
           </Link>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Users, DollarSign, Award, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { Trophy, Users, DollarSign, Award, ChevronDown, ChevronUp, User, Crown } from 'lucide-react';
 import { useAuction } from '../context/AuctionSocketContext';
 import { formatINR, formatINRCompact, formatDateTime } from '../utils/formatters';
 
@@ -14,21 +14,24 @@ export default function TeamsPage() {
       {/* Page Header */}
       <div>
         <h1 className="font-display font-black text-3xl text-white">
-          THE SIX FRANCHISES & SQUADS
+          THE 5 FRANCHISES & SQUADS
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Complete roster compositions, remaining purse balances, and player acquisition histories.
+          Complete roster compositions, remaining purse balances, real-time bidding, and squad completion guarantees.
         </p>
       </div>
 
-      {/* 6 Team Cards Grid */}
+      {/* 5 Team Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {(teams || []).map((team) => {
           const squad = team.squad || [];
           const purchasedCount = team.purchasedCount ?? squad.length;
           const maxSlots = team.maxSquadSize || 15;
+          const minSquad = 11;
+          const minBase = 2;
           const remainingPurse = team.remainingPurse ?? team.initialPurse;
           const committedSpent = team.committedSpent ?? 0;
+          const safeBid = team.maxSafeBid ?? Math.max(0, remainingPurse - Math.max(0, minSquad - (purchasedCount + 1)) * minBase);
           const isSelected = selectedTeam?._id === team._id;
 
           return (
@@ -63,9 +66,15 @@ export default function TeamsPage() {
                     <h3 className="font-display font-black text-lg text-white truncate mt-1">
                       {team.name}
                     </h3>
-                    <p className="text-xs text-slate-400">
-                      Owner: <strong className="text-slate-200">{team.ownerUserId?.name || 'Assigned Owner'}</strong>
-                    </p>
+                    <div className="flex flex-col gap-0.5 mt-1 text-xs">
+                      <p className="text-slate-400 truncate">
+                        Owner: <strong className="text-slate-200">{team.ownerUserId?.name || 'Assigned Owner'}</strong>
+                      </p>
+                      <p className="text-amber-300 font-bold flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-cpl-gold shrink-0" />
+                        <span>Captain: {team.captainName || 'Not Announced'}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -81,13 +90,13 @@ export default function TeamsPage() {
                     <div
                       className="bg-cpl-gold h-full rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.max(5, ((remainingPurse / (team.initialPurse || 10000000)) * 100))}%`,
+                        width: `${Math.max(5, ((remainingPurse / (team.initialPurse || 100)) * 100))}%`,
                       }}
                     />
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-slate-500">
                     <span>Spent: {formatINRCompact(committedSpent)}</span>
-                    <span>Initial: {formatINRCompact(team.initialPurse || 10000000)}</span>
+                    <span className="text-emerald-400 font-bold">Max Safe Bid: {formatINRCompact(safeBid)}</span>
                   </div>
                 </div>
               </div>

@@ -1,9 +1,9 @@
-Player ID,Full Name,Primary Playing Role,Base Price INR,Department,Academic Year,Batting Style,Bowling Style,Category,Photo URL
-CPL-EXT01,Aman Deep Sharma,Batsman,300000,Computer Science,4th Year,Right-hand bat,Right-arm offbreak,Category A,https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300
-CPL-EXT02,Vivek Sundaram,Bowler,350000,Mechanical Engineering,3rd Year,Right-hand bat,Right-arm fast,Category A,https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300
-CPL-EXT03,Karanveer Singh,All-Rounder,400000,Electronics & Comm,3rd Year,Left-hand bat,Right-arm medium,Category A,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300
-CPL-EXT04,Harshit Pathak,Wicket-Keeper,250000,Civil Engineering,2nd Year,Right-hand aggressive bat,None,Category B,https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300
-CPL-EXT05,Suraj Prajapati,Bowler,200000,Biotechnology,1st Year,Right-hand bat,Left-arm orthodox,Emerging,https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300
-CPL-EXT06,Naveen Choudhary,Batsman,250000,Management Studies,2nd Year,Right-hand anchor,Right-arm medium,Category B,https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300
-CPL-EXT07,Farhan Qureshi,All-Rounder,500000,Information Technology,4th Year,Left-hand power hitter,Right-arm off spin,Marquee,https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300
-CPL-EXT08,Tanmay Joshi,Bowler,150000,Electrical Engineering,1st Year,Right-hand bat,Right-arm seam,Emerging,https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300
+Player ID,Full Name,Primary Playing Role,Base Price Credits,Department,Academic Year,Batting Style,Bowling Style,Category,Photo URL
+CPL-EXT01,Aman Deep Sharma,Batsman,5,Computer Science,4th Year,Right-hand bat,Right-arm offbreak,Category A,https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300
+CPL-EXT02,Vivek Sundaram,Bowler,6,Mechanical Engineering,3rd Year,Right-hand bat,Right-arm fast,Category A,https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300
+CPL-EXT03,Karanveer Singh,All-Rounder,6,Electronics & Comm,3rd Year,Left-hand bat,Right-arm medium,Category A,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300
+CPL-EXT04,Harshit Pathak,Wicket-Keeper,4,Civil Engineering,2nd Year,Right-hand aggressive bat,None,Category B,https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300
+CPL-EXT05,Suraj Prajapati,Bowler,3,Biotechnology,1st Year,Right-hand bat,Left-arm orthodox,Emerging,https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300
+CPL-EXT06,Naveen Choudhary,Batsman,4,Management Studies,2nd Year,Right-hand anchor,Right-arm medium,Category B,https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300
+CPL-EXT07,Farhan Qureshi,All-Rounder,10,Information Technology,4th Year,Left-hand power hitter,Right-arm off spin,Marquee,https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300
+CPL-EXT08,Tanmay Joshi,Bowler,2,Electrical Engineering,1st Year,Right-hand bat,Right-arm seam,Emerging,https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300

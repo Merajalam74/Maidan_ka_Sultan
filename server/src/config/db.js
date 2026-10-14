@@ -8,51 +8,61 @@ export let isReplicaSetSupported = false;
  * embedded MongoDB fallback for zero-friction local development.
  */
 export async function connectDB() {
-  const uri = process.env.MONGODB_URI;
+  const isTestEnv = process.env.NODE_ENV === 'test';
 
-  // Attempt connection to configured URI if present
-  if (uri && !uri.includes('localhost:27017')) {
+  // In automated test runs (vitest), strictly use isolated in-memory replica set
+  // so tests run in parallel without clobbering the live database or throwing duplicate key conflicts.
+  if (isTestEnv) {
     try {
-      console.log(`[DB] Connecting to MongoDB at ${uri.replace(/\/\/[^@]+@/, '//***:***@')}...`);
-      const conn = await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 5000,
-      });
-      console.log(`[DB] Successfully connected to MongoDB: ${conn.connection.host}`);
-      await detectReplicaSetSupport();
-      return conn;
-    } catch (err) {
-      console.warn(`[DB] Warning: Failed to connect to configured MONGODB_URI (${err.message}).`);
-      console.log('[DB] Falling back to embedded MongoMemoryServer for development...');
+      const { MongoMemoryReplSet, MongoMemoryServer } = await import('mongodb-memory-server');
+      try {
+        mongoMemoryServer = await MongoMemoryReplSet.create({
+          replSet: { count: 1, storageEngine: 'wiredTiger' },
+        });
+        const replUri = mongoMemoryServer.getUri();
+        const conn = await mongoose.connect(replUri);
+        isReplicaSetSupported = true;
+        return conn;
+      } catch (replErr) {
+        mongoMemoryServer = await MongoMemoryServer.create();
+        const memUri = mongoMemoryServer.getUri();
+        const conn = await mongoose.connect(memUri);
+        isReplicaSetSupported = false;
+        return conn;
+      }
+    } catch (memErr) {
+      console.error('[DB] Failed to start test MongoDB server:', memErr.message);
+      throw memErr;
     }
   }
 
-  // Fallback to embedded MongoDB (using mongodb-memory-server)
+  // Non-test environment: strictly require and connect to the real MONGODB_URI from server/.env
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    const errorMsg = '[DB] MONGODB_URI is missing in server/.env. Please configure your real MongoDB connection string.';
+    console.error(`\n❌ ${errorMsg}\n`);
+    throw new Error(errorMsg);
+  }
+
   try {
-    const { MongoMemoryReplSet, MongoMemoryServer } = await import('mongodb-memory-server');
-    
-    // Try starting in-memory Replica Set first (for real MongoDB transactions support)
-    try {
-      console.log('[DB] Initializing embedded in-memory MongoDB Replica Set...');
-      mongoMemoryServer = await MongoMemoryReplSet.create({
-        replSet: { count: 1, storageEngine: 'wiredTiger' },
-      });
-      const replUri = mongoMemoryServer.getUri();
-      const conn = await mongoose.connect(replUri);
-      console.log(`[DB] Connected to embedded MongoDB Replica Set: ${replUri}`);
-      isReplicaSetSupported = true;
-      return conn;
-    } catch (replErr) {
-      console.warn(`[DB] Replica Set fallback to standalone instance (${replErr.message})`);
-      mongoMemoryServer = await MongoMemoryServer.create();
-      const memUri = mongoMemoryServer.getUri();
-      const conn = await mongoose.connect(memUri);
-      console.log(`[DB] Connected to embedded standalone MongoDB: ${memUri}`);
-      isReplicaSetSupported = false;
-      return conn;
+    console.log(`[DB] Connecting to real MongoDB at ${uri.replace(/\/\/[^@]+@/, '//***:***@')}...`);
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    console.log(`[DB] Successfully connected to real MongoDB: ${conn.connection.host}`);
+    await detectReplicaSetSupport();
+    return conn;
+  } catch (err) {
+    console.error(`\n❌ [DB] FATAL: Failed to connect to configured real MONGODB_URI in server/.env!`);
+    console.error(`   Error details: ${err.message}`);
+    if (err.message.includes('bad auth') || err.message.includes('authentication failed')) {
+      console.error(`\n💡 Authentication failed for MongoDB Atlas:`);
+      console.error(`   1. Open MongoDB Atlas (https://cloud.mongodb.com) -> Security -> Database Access.`);
+      console.error(`   2. Verify username and reset password for the database user.`);
+      console.error(`   3. Under Network Access, ensure 0.0.0.0/0 (Allow access from anywhere) is enabled.`);
+      console.error(`   4. Update MONGODB_URI in server/.env with the exact connection string.\n`);
     }
-  } catch (memErr) {
-    console.error('[DB] Failed to start embedded MongoDB server:', memErr.message);
-    throw memErr;
+    throw err;
   }
 }
 

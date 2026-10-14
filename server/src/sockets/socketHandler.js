@@ -284,7 +284,7 @@ export async function broadcastAuctionState(tournamentId) {
 /**
  * Broadcast accepted bid event
  */
-export async function broadcastBidAccepted(tournamentId, { bid, session }) {
+export async function broadcastBidAccepted(tournamentId, { bid, session, feasibility }) {
   if (!ioInstance || !tournamentId) return;
 
   try {
@@ -294,6 +294,7 @@ export async function broadcastBidAccepted(tournamentId, { bid, session }) {
       bid,
       session,
       teams,
+      feasibility,
     });
   } catch (err) {
     console.error('[Socket] broadcastBidAccepted error:', err.message);
