@@ -39,9 +39,36 @@ const io = new Server(server, {
 // Initialize socket handlers
 initSockets(io);
 
+function validateEnv() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const missing = [];
+
+  if (!process.env.MONGODB_URI) missing.push('MONGODB_URI');
+  if (!process.env.JWT_SECRET) {
+    if (isProd) missing.push('JWT_SECRET');
+  } else if (isProd) {
+    const weakSecrets = [
+      'cpl_super_secure_jwt_secret_key_change_in_production_2026',
+      'campus_premier_league_jwt_secret_key_2026_production_grade',
+      'secret',
+      '123456',
+    ];
+    if (weakSecrets.includes(process.env.JWT_SECRET) || process.env.JWT_SECRET.length < 32) {
+      console.error('[FATAL] Insecure or default JWT_SECRET detected in production environment. A strong secret (>= 32 chars) is required.');
+      process.exit(1);
+    }
+  }
+
+  if (missing.length > 0) {
+    console.error(`[FATAL] Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
 // Boot server
 async function startServer() {
   try {
+    validateEnv();
     await connectDB();
 
     // Auto-seed if database is freshly started and empty

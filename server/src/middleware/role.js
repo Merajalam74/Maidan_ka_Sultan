@@ -10,6 +10,7 @@ export function authorizeRoles(...allowedRoles) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required.',
+        code: 'AUTH_REQUIRED',
       });
     }
 
@@ -24,7 +25,8 @@ export function authorizeRoles(...allowedRoles) {
 
     return res.status(403).json({
       success: false,
-      message: `Access denied. Requires one of [${allowedRoles.join(', ')}] role.`,
+      message: 'Access denied. You do not have permission to perform this action.',
+      code: 'FORBIDDEN',
     });
   };
 }

@@ -3,10 +3,12 @@ import { getTournament, updateTournament } from '../controllers/tournamentContro
 import { authenticate } from '../middleware/auth.js';
 import { requireSuperAdmin } from '../middleware/role.js';
 
+import { validateObjectId } from '../middleware/validate.js';
+
 const router = Router();
 
 router.get('/active', getTournament);
-router.get('/:id', getTournament);
-router.put('/:id', authenticate, requireSuperAdmin, updateTournament);
+router.get('/:id', validateObjectId('id'), getTournament);
+router.put('/:id', authenticate, requireSuperAdmin, validateObjectId('id'), updateTournament);
 
 export default router;

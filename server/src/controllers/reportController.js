@@ -18,7 +18,7 @@ export async function getSummary(req, res, next) {
     }
 
     if (!tournamentId) {
-      return res.status(404).json({ success: false, message: 'Tournament not found' });
+      return res.status(404).json({ success: false, message: 'Tournament not found', code: 'NOT_FOUND' });
     }
 
     const summary = await getTournamentSummary(tournamentId);
@@ -39,7 +39,8 @@ export async function getBids(req, res, next) {
       if (active) tournamentId = active._id;
     }
 
-    const limit = Number(req.query.limit) || 100;
+    const parsedLimit = parseInt(req.query.limit, 10);
+    const limit = isNaN(parsedLimit) || parsedLimit < 1 ? 100 : Math.min(parsedLimit, 500);
     const bids = await getBidHistory(tournamentId, limit);
     return res.json({ success: true, count: bids.length, bids });
   } catch (err) {

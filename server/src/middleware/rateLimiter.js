@@ -9,6 +9,7 @@ export const authLimiter = rateLimit({
   message: {
     success: false,
     message: 'Too many authentication attempts. Please try again after 15 minutes.',
+    code: 'RATE_LIMIT_EXCEEDED',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -23,6 +24,7 @@ export const bidLimiter = rateLimit({
   message: {
     success: false,
     message: 'Bid submission rate exceeded. Please slow down.',
+    code: 'RATE_LIMIT_EXCEEDED',
   },
   standardHeaders: true,
   legacyHeaders: false,

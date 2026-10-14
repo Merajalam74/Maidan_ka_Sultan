@@ -10,12 +10,30 @@ import { ROLES } from '../config/constants.js';
  */
 export async function register(req, res, next) {
   try {
-    const { name, email, password, globalRole } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required.',
+        message: 'A valid name with at least 2 characters is required.',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid email address is required.',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long.',
+        code: 'VALIDATION_ERROR',
       });
     }
 
@@ -24,15 +42,18 @@ export async function register(req, res, next) {
       return res.status(409).json({
         success: false,
         message: 'A user with this email already exists.',
+        code: 'USER_ALREADY_EXISTS',
       });
     }
 
     const passwordHash = await User.hashPassword(password);
+    // Public registration strictly assigns VIEWER role to prevent privilege escalation
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       passwordHash,
-      globalRole: globalRole && Object.values(ROLES).includes(globalRole) ? globalRole : ROLES.VIEWER,
+      globalRole: ROLES.VIEWER,
+      tokenVersion: 0,
     });
 
     const token = generateToken(user);
@@ -60,10 +81,18 @@ export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (
+      !email ||
+      !password ||
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Email and password are required.',
+        code: 'INVALID_REQUEST',
       });
     }
 
@@ -72,6 +101,7 @@ export async function login(req, res, next) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.',
+        code: 'INVALID_CREDENTIALS',
       });
     }
 
@@ -80,6 +110,7 @@ export async function login(req, res, next) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.',
+        code: 'INVALID_CREDENTIALS',
       });
     }
 
@@ -87,6 +118,7 @@ export async function login(req, res, next) {
       return res.status(403).json({
         success: false,
         message: 'Account is suspended or deactivated.',
+        code: 'ACCOUNT_INACTIVE',
       });
     }
 
@@ -155,6 +187,14 @@ export async function getMe(req, res, next) {
  */
 export async function getDemoAccounts(req, res, next) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({
+        success: false,
+        message: 'Endpoint not found.',
+        code: 'NOT_FOUND',
+      });
+    }
+
     const users = await User.find({
       $or: [
         {
@@ -185,8 +225,6 @@ export async function getDemoAccounts(req, res, next) {
 
     const demoList = users.map((u) => {
       const assigned = teamMap.get(u._id.toString());
-      const isSuper = u.globalRole === ROLES.SUPERADMIN || u.email.startsWith('admin');
-      const isAuct = u.globalRole === ROLES.AUCTIONEER || u.email.startsWith('auction');
       return {
         id: u._id,
         name: u.name,
@@ -195,7 +233,6 @@ export async function getDemoAccounts(req, res, next) {
         teamName: assigned ? assigned.name : null,
         teamShortCode: assigned ? assigned.shortCode : null,
         teamLogo: assigned ? assigned.logoUrl : null,
-        defaultPassword: isSuper ? 'Admin@123456' : isAuct ? 'Auctioneer@123456' : 'Owner@123456',
       };
     });
 
@@ -215,35 +252,52 @@ export async function changePassword(req, res, next) {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    if (!newPassword || newPassword.trim().length < 6) {
+    if (!currentPassword || typeof currentPassword !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required.',
+        code: 'CURRENT_PASSWORD_REQUIRED',
+      });
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
       return res.status(400).json({
         success: false,
         message: 'New password must be at least 6 characters long.',
+        code: 'VALIDATION_ERROR',
       });
     }
 
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'User not found.', code: 'NOT_FOUND' });
     }
 
-    // If current password provided, verify it
-    if (currentPassword) {
-      const isMatch = await user.comparePassword(currentPassword);
-      if (!isMatch) {
-        return res.status(400).json({
-          success: false,
-          message: 'Current password does not match.',
-        });
-      }
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password does not match.',
+        code: 'INVALID_CURRENT_PASSWORD',
+      });
     }
 
     user.passwordHash = await User.hashPassword(newPassword.trim());
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+
+    const token = generateToken(user);
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.json({
       success: true,
-      message: 'Password updated successfully.',
+      token,
+      message: 'Password updated successfully. Existing sessions have been invalidated.',
     });
   } catch (err) {
     next(err);

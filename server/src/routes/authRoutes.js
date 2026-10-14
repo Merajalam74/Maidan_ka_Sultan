@@ -10,6 +10,6 @@ router.post('/login', authLimiter, login);
 router.post('/logout', logout);
 router.get('/me', authenticate, getMe);
 router.post('/change-password', authenticate, changePassword);
-router.get('/demo-accounts', getDemoAccounts);
+router.get('/demo-accounts', authenticate, getDemoAccounts);
 
 export default router;

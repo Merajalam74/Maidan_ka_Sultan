@@ -29,11 +29,12 @@ export async function getPlayers(req, res, next) {
 
     const filter = { tournamentId };
 
-    if (search) {
+    if (search && typeof search === 'string') {
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: { $regex: search.trim(), $options: 'i' } },
-        { externalId: { $regex: search.trim(), $options: 'i' } },
-        { department: { $regex: search.trim(), $options: 'i' } },
+        { name: { $regex: sanitizedSearch, $options: 'i' } },
+        { externalId: { $regex: sanitizedSearch, $options: 'i' } },
+        { department: { $regex: sanitizedSearch, $options: 'i' } },
       ];
     }
 
@@ -48,8 +49,20 @@ export async function getPlayers(req, res, next) {
     }
     if (department && department !== 'all') filter.department = department;
 
+    const allowedSortFields = [
+      'nominationOrder',
+      'name',
+      'basePrice',
+      'soldPrice',
+      'category',
+      'role',
+      'status',
+      'createdAt',
+      'department',
+    ];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'nominationOrder';
     const sortOptions = {};
-    sortOptions[sortBy] = order === 'desc' ? -1 : 1;
+    sortOptions[safeSortBy] = order === 'desc' ? -1 : 1;
 
     const skip = (Number(page) - 1) * Number(limit);
     const [players, total] = await Promise.all([
@@ -257,7 +270,26 @@ export async function updatePlayer(req, res, next) {
       });
     }
 
-    Object.assign(player, req.body);
+    const allowedUpdates = [
+      'name',
+      'phoneNumber',
+      'role',
+      'basePrice',
+      'photoUrl',
+      'department',
+      'academicYear',
+      'battingStyle',
+      'bowlingStyle',
+      'category',
+      'notes',
+      'stats',
+    ];
+
+    for (const field of allowedUpdates) {
+      if (req.body[field] !== undefined) {
+        player[field] = req.body[field];
+      }
+    }
     await player.save();
 
     return res.json({

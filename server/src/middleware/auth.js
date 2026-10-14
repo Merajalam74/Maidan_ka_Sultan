@@ -22,6 +22,7 @@ export async function authenticate(req, res, next) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required. Please log in.',
+        code: 'AUTH_REQUIRED',
       });
     }
 
@@ -32,6 +33,7 @@ export async function authenticate(req, res, next) {
       return res.status(401).json({
         success: false,
         message: 'User account not found.',
+        code: 'AUTH_FAILED',
       });
     }
 
@@ -39,6 +41,20 @@ export async function authenticate(req, res, next) {
       return res.status(403).json({
         success: false,
         message: 'Account is suspended or inactive.',
+        code: 'ACCOUNT_INACTIVE',
+      });
+    }
+
+    // Check if token was issued prior to password change/invalidation
+    if (
+      decoded.tokenVersion !== undefined &&
+      user.tokenVersion !== undefined &&
+      decoded.tokenVersion !== user.tokenVersion
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: 'Session has been invalidated. Please log in again.',
+        code: 'SESSION_INVALIDATED',
       });
     }
 
@@ -49,11 +65,13 @@ export async function authenticate(req, res, next) {
       return res.status(401).json({
         success: false,
         message: 'Session expired. Please log in again.',
+        code: 'TOKEN_EXPIRED',
       });
     }
     return res.status(401).json({
       success: false,
       message: 'Invalid authentication token.',
+      code: 'INVALID_TOKEN',
     });
   }
 }
@@ -74,7 +92,11 @@ export async function optionalAuth(req, res, next) {
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET);
       const user = await User.findById(decoded.id);
-      if (user && user.status === 'active') {
+      if (
+        user &&
+        user.status === 'active' &&
+        (decoded.tokenVersion === undefined || decoded.tokenVersion === (user.tokenVersion || 0))
+      ) {
         req.user = user;
       }
     }
@@ -94,6 +116,7 @@ export function generateToken(user) {
       id: user._id,
       email: user.email,
       globalRole: user.globalRole,
+      tokenVersion: user.tokenVersion || 0,
     },
     JWT_SECRET,
     { expiresIn }

@@ -100,7 +100,11 @@ export async function nominate(req, res, next) {
   try {
     const { tournamentId, playerId } = req.body;
     if (!tournamentId || !playerId) {
-      return res.status(400).json({ success: false, message: 'Tournament ID and Player ID are required.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Tournament ID and Player ID are required.',
+        code: 'VALIDATION_ERROR',
+      });
     }
 
     const session = await nominatePlayer(tournamentId, playerId, req.user._id);
@@ -123,8 +127,21 @@ export async function submitBid(req, res, next) {
   try {
     const { tournamentId, teamId, bidAmount, idempotencyKey } = req.body;
 
-    if (!tournamentId || !teamId || !bidAmount) {
-      return res.status(400).json({ success: false, message: 'Tournament ID, Team ID, and Bid Amount are required.' });
+    if (!tournamentId || !teamId || bidAmount === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tournament ID, Team ID, and Bid Amount are required.',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    const parsedBid = Number(bidAmount);
+    if (!Number.isFinite(parsedBid) || !Number.isInteger(parsedBid) || parsedBid <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bid amount must be a valid positive integer.',
+        code: 'INVALID_BID_AMOUNT',
+      });
     }
 
     // Authorization check: If not superadmin, user must be the assigned owner of this team
@@ -134,6 +151,7 @@ export async function submitBid(req, res, next) {
         return res.status(403).json({
           success: false,
           message: 'Forbidden: You are only authorized to submit bids for your assigned team.',
+          code: 'FORBIDDEN',
         });
       }
     }

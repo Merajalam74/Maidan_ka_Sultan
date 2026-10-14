@@ -7,4 +7,10 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  build: {
+    sourcemap: false, // Prevent exposing source maps in production
+  },
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+  },
 });

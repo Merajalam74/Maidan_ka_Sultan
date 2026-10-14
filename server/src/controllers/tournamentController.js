@@ -44,9 +44,25 @@ export async function getTournament(req, res, next) {
 export async function updateTournament(req, res, next) {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const allowedFields = [
+      'name',
+      'status',
+      'currency',
+      'currencySymbol',
+      'defaultPurse',
+      'minBidIncrement',
+      'countdownDurationSeconds',
+      'squadLimit',
+      'rules',
+    ];
+    const safeUpdates = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        safeUpdates[field] = req.body[field];
+      }
+    }
 
-    const tournament = await Tournament.findByIdAndUpdate(id, updates, {
+    const tournament = await Tournament.findByIdAndUpdate(id, safeUpdates, {
       new: true,
       runValidators: true,
     });
@@ -55,6 +71,7 @@ export async function updateTournament(req, res, next) {
       return res.status(404).json({
         success: false,
         message: 'Tournament not found',
+        code: 'NOT_FOUND',
       });
     }
 
