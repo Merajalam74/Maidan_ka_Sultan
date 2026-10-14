@@ -304,6 +304,14 @@ export async function previewImport(req, res, next) {
   try {
     let { csvContent, googleSheetUrl, mapping = {}, tournamentId } = req.body;
 
+    if (typeof mapping === 'string') {
+      try {
+        mapping = JSON.parse(mapping);
+      } catch (e) {
+        mapping = {};
+      }
+    }
+
     if (!tournamentId) {
       const active = await Tournament.findOne().sort({ createdAt: -1 });
       if (active) tournamentId = active._id;
@@ -358,6 +366,14 @@ export async function previewImport(req, res, next) {
 export async function confirmImport(req, res, next) {
   try {
     let { tournamentId, mappedRows } = req.body;
+
+    if (typeof mappedRows === 'string') {
+      try {
+        mappedRows = JSON.parse(mappedRows);
+      } catch (e) {
+        mappedRows = [];
+      }
+    }
 
     if (!tournamentId) {
       const active = await Tournament.findOne().sort({ createdAt: -1 });

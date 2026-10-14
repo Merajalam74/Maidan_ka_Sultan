@@ -78,6 +78,57 @@ export function normalizeCategory(catStr) {
 }
 
 /**
+ * Normalizes Google Drive and image URLs to direct high-res CDN thumbnail links
+ */
+export function normalizeDrivePhotoUrl(url) {
+  if (!url) return '';
+  const str = String(url).trim();
+  if (str.includes('drive.google.com')) {
+    const idMatch = str.match(/[?&]id=([a-zA-Z0-9_-]+)/) || str.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://lh3.googleusercontent.com/d/${idMatch[1]}`;
+    }
+  }
+  return str;
+}
+
+/**
+ * Case-insensitive & fuzzy column reader supporting misspellings like PHHONE NUMBER
+ */
+export function getRowField(row, mappedHeader, fallbackKeywords) {
+  if (mappedHeader && row[mappedHeader] !== undefined && String(row[mappedHeader]).trim() !== '') {
+    return String(row[mappedHeader]).trim();
+  }
+  const rowKeys = Object.keys(row || {});
+  // 1. Exact case-insensitive match (stripping spaces and punctuation)
+  for (const keyword of fallbackKeywords) {
+    const cleanKw = keyword.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const rk of rowKeys) {
+      const cleanRk = rk.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cleanRk === cleanKw) {
+        if (row[rk] !== undefined && String(row[rk]).trim() !== '') {
+          return String(row[rk]).trim();
+        }
+      }
+    }
+  }
+  // 2. Substring match
+  for (const keyword of fallbackKeywords) {
+    const cleanKw = keyword.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!cleanKw) continue;
+    for (const rk of rowKeys) {
+      const cleanRk = rk.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cleanRk.includes(cleanKw) || cleanKw.includes(cleanRk)) {
+        if (row[rk] !== undefined && String(row[rk]).trim() !== '') {
+          return String(row[rk]).trim();
+        }
+      }
+    }
+  }
+  return '';
+}
+
+/**
  * Helper to compute composite duplicate key based on:
  * Mobile number + Name + Academic Year + Branch (Department)
  */
@@ -92,7 +143,7 @@ export function getCompositeKey(phone, name, year, dept) {
 /**
  * Previews rows against column mapping and database validation
  */
-export async function previewPlayerImport({ tournamentId, rawRows, mapping }) {
+export async function previewPlayerImport({ tournamentId, rawRows, mapping = {} }) {
   const existingPlayers = await Player.find({ tournamentId });
   const existingCompositeMap = new Map();
   const existingMapByName = new Map();
@@ -110,18 +161,18 @@ export async function previewPlayerImport({ tournamentId, rawRows, mapping }) {
   for (let idx = 0; idx < rawRows.length; idx++) {
     const row = rawRows[idx];
 
-    // Extract fields via mapping
-    const rawId = mapping.externalId ? row[mapping.externalId] : row['Player ID'] || row['ID'] || '';
-    const rawName = mapping.name ? row[mapping.name] : row['Full Name'] || row['Name'] || row['Player Name'] || '';
-    const rawRole = mapping.role ? row[mapping.role] : row['Role'] || row['Playing Role'] || '';
-    const rawBasePrice = mapping.basePrice ? row[mapping.basePrice] : row['Base Price'] || row['Price'] || row['Base Price Credits'] || '';
-    const rawPhoto = mapping.photoUrl ? row[mapping.photoUrl] : row['Photo'] || row['Photo URL'] || row['Image'] || '';
-    const rawDept = mapping.department ? row[mapping.department] : row['Department'] || row['Dept'] || row['Branch'] || row['College'] || '';
-    const rawYear = mapping.academicYear ? row[mapping.academicYear] : row['Year'] || row['Academic Year'] || '';
-    const rawBat = mapping.battingStyle ? row[mapping.battingStyle] : row['Batting Style'] || row['Batting'] || '';
-    const rawBowl = mapping.bowlingStyle ? row[mapping.bowlingStyle] : row['Bowling Style'] || row['Bowling'] || '';
-    const rawCat = mapping.category ? row[mapping.category] : row['Category'] || '';
-    const rawPhone = mapping.phoneNumber ? row[mapping.phoneNumber] : row['Phone'] || row['Phone Number'] || row['Mobile'] || row['WhatsApp'] || '';
+    // Extract fields via mapping or smart fuzzy fallback
+    const rawId = getRowField(row, mapping.externalId, ['registration/player id', 'registration id', 'player id', 'reg id', 'reg no', 'id', 'roll']);
+    const rawName = getRowField(row, mapping.name, ['fullname', 'full name', 'name', 'player name', 'player']);
+    const rawPhone = getRowField(row, mapping.phoneNumber, ['phhone number', 'phone number', 'phone', 'phhone', 'mobile', 'whatsapp', 'contact']);
+    const rawRole = getRowField(row, mapping.role, ['primary playing role', 'playing role', 'primary role', 'role', 'speciality', 'position']);
+    const rawBasePrice = getRowField(row, mapping.basePrice, ['base price', 'base price credits', 'price', 'credits', 'base']);
+    const rawPhoto = getRowField(row, mapping.photoUrl, ['player photograph link', 'photograph link', 'photo link', 'photo url', 'photo', 'image', 'picture', 'link']);
+    const rawDept = getRowField(row, mapping.department, ['department', 'dept', 'branch', 'college', 'course']);
+    const rawYear = getRowField(row, mapping.academicYear, ['academic year', 'year', 'batch', 'standing']);
+    const rawCat = getRowField(row, mapping.category, ['player category', 'category', 'tier', 'group']);
+    const rawBat = getRowField(row, mapping.battingStyle, ['batting style', 'batting', 'batsman style']);
+    const rawBowl = getRowField(row, mapping.bowlingStyle, ['bowling style', 'bowling', 'bowler style']);
 
     const name = String(rawName).trim();
     const externalId = String(rawId).trim();
@@ -130,11 +181,12 @@ export async function previewPlayerImport({ tournamentId, rawRows, mapping }) {
     const academicYear = String(rawYear).trim() || 'N/A';
     const role = normalizeRole(rawRole);
     const category = normalizeCategory(rawCat);
+    const photoUrl = normalizeDrivePhotoUrl(rawPhoto);
 
-    // Parse base price
+    // Parse base price (defaults to 1 Credit if unspecified)
     let basePrice = Number(String(rawBasePrice).replace(/[^0-9.]/g, ''));
     if (isNaN(basePrice) || basePrice <= 0) {
-      basePrice = 2; // Default 2 Credits minimum
+      basePrice = 1;
     }
 
     const issues = [];
@@ -175,7 +227,7 @@ export async function previewPlayerImport({ tournamentId, rawRows, mapping }) {
       role,
       category,
       basePrice,
-      photoUrl: String(rawPhoto).trim(),
+      photoUrl: photoUrl || '',
       department,
       academicYear,
       battingStyle: String(rawBat).trim() || 'Right-hand bat',

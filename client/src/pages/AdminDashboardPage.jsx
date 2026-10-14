@@ -38,6 +38,7 @@ export default function AdminDashboardPage() {
   // Tab 4: Import state
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [csvFile, setCsvFile] = useState(null);
+  const [csvRawText, setCsvRawText] = useState('');
   const [importPreview, setImportPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [columnMapping, setColumnMapping] = useState({
@@ -126,6 +127,7 @@ export default function AdminDashboardPage() {
       const formData = new FormData();
       if (csvFile) formData.append('file', csvFile);
       if (googleSheetUrl) formData.append('googleSheetUrl', googleSheetUrl);
+      if (csvRawText && !csvFile) formData.append('csvContent', csvRawText);
       formData.append('mapping', JSON.stringify(columnMapping));
 
       const res = await api.post('/players/import/preview', formData, {
@@ -134,19 +136,22 @@ export default function AdminDashboardPage() {
 
       if (res.data?.success) {
         setImportPreview(res.data);
-        // Auto-match common header names if not mapped yet
+        // Auto-match common header names if not mapped yet (case-insensitive & fuzzy)
         const headers = res.data.headers || [];
         const newMapping = { ...columnMapping };
         headers.forEach((h) => {
-          const lower = h.toLowerCase();
-          if (!newMapping.name && (lower.includes('name') || lower.includes('player'))) newMapping.name = h;
-          if (!newMapping.role && lower.includes('role')) newMapping.role = h;
-          if (!newMapping.basePrice && (lower.includes('price') || lower.includes('base'))) newMapping.basePrice = h;
-          if (!newMapping.department && (lower.includes('dept') || lower.includes('department'))) newMapping.department = h;
-          if (!newMapping.academicYear && (lower.includes('year') || lower.includes('acad'))) newMapping.academicYear = h;
-          if (!newMapping.photoUrl && (lower.includes('photo') || lower.includes('image') || lower.includes('url'))) newMapping.photoUrl = h;
-          if (!newMapping.category && lower.includes('category')) newMapping.category = h;
-          if (!newMapping.externalId && (lower.includes('id') || lower.includes('reg'))) newMapping.externalId = h;
+          const clean = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (!newMapping.name && (clean.includes('name') || clean.includes('player'))) newMapping.name = h;
+          if (!newMapping.phoneNumber && (clean.includes('phone') || clean.includes('phhone') || clean.includes('mobile') || clean.includes('whatsapp') || clean.includes('contact'))) newMapping.phoneNumber = h;
+          if (!newMapping.role && clean.includes('role')) newMapping.role = h;
+          if (!newMapping.basePrice && (clean.includes('price') || clean.includes('base') || clean.includes('credit'))) newMapping.basePrice = h;
+          if (!newMapping.department && (clean.includes('dept') || clean.includes('department') || clean.includes('branch') || clean.includes('college'))) newMapping.department = h;
+          if (!newMapping.academicYear && (clean.includes('year') || clean.includes('acad') || clean.includes('batch'))) newMapping.academicYear = h;
+          if (!newMapping.photoUrl && (clean.includes('photo') || clean.includes('image') || clean.includes('url') || clean.includes('link') || clean.includes('pic'))) newMapping.photoUrl = h;
+          if (!newMapping.category && (clean.includes('category') || clean.includes('tier') || clean.includes('group'))) newMapping.category = h;
+          if (!newMapping.externalId && (clean.includes('id') || clean.includes('reg') || clean.includes('roll'))) newMapping.externalId = h;
+          if (!newMapping.battingStyle && clean.includes('bat')) newMapping.battingStyle = h;
+          if (!newMapping.bowlingStyle && clean.includes('bowl')) newMapping.bowlingStyle = h;
         });
         setColumnMapping(newMapping);
       }
@@ -162,7 +167,7 @@ export default function AdminDashboardPage() {
     try {
       setImporting(true);
       const res = await api.post('/players/import/confirm', {
-        tournamentId: tournament?.id,
+        tournamentId: tournament?._id || tournament?.id,
         mappedRows: importPreview.preview,
       });
 
@@ -170,8 +175,10 @@ export default function AdminDashboardPage() {
         alert(res.data.message);
         setImportPreview(null);
         setCsvFile(null);
+        setCsvRawText('');
         setGoogleSheetUrl('');
         refreshState();
+        fetchAdminData();
       }
     } catch (err) {
       alert(`Import failed: ${err.message}`);
@@ -282,7 +289,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <form onSubmit={handlePreviewImport} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 {/* Method A: Google Sheet URL */}
                 <div className="p-4 rounded-xl bg-cpl-surface border border-cpl-border space-y-2">
@@ -317,11 +324,28 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
 
+                {/* Method C: Paste CSV Text Directly */}
+                <div className="p-4 rounded-xl bg-cpl-surface border border-cpl-border space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-cpl-gold block">
+                    Option C: Paste CSV Text
+                  </span>
+                  <textarea
+                    rows={2}
+                    value={csvRawText}
+                    onChange={(e) => setCsvRawText(e.target.value)}
+                    placeholder="FULL NAME,PHHONE NUMBER,PRIMARY PLAYING ROLE,..."
+                    className="w-full bg-cpl-dark border border-cpl-border rounded-lg px-3 py-2 text-[11px] font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cpl-gold resize-y"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Paste raw CSV text rows directly.
+                  </p>
+                </div>
+
               </div>
 
               <button
                 type="submit"
-                disabled={importing || (!googleSheetUrl && !csvFile)}
+                disabled={importing || (!googleSheetUrl && !csvFile && !csvRawText.trim())}
                 className="gold-gradient-btn px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-40 flex items-center gap-2"
               >
                 <UploadCloud className="w-4 h-4" />
