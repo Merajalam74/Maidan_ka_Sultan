@@ -14,7 +14,7 @@ export default function TeamsPage() {
       {/* Page Header */}
       <div>
         <h1 className="font-display font-black text-3xl text-white">
-          THE 5 FRANCHISES & SQUADS
+          THE FRANCHISES & SQUADS
         </h1>
         <p className="text-xs text-slate-400 mt-1">
           Complete roster compositions, remaining purse balances, real-time bidding, and squad completion guarantees.
