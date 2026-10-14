@@ -89,13 +89,14 @@ export async function seedDatabase(options = { clearExisting: false }) {
     { upsert: true, new: true }
   );
 
-  // Exactly 5 Team Owners
+  // 6 Team Owners (Captain is Owner)
   const ownerConfigs = [
-    { email: 'jebkatre@mks.edu', name: 'Sultan Bhai (Owner)', teamName: 'Jeb Katre' },
-    { email: 'maqsad@mks.edu', name: 'Captain Maqsad (Owner)', teamName: 'Maqsad XI' },
-    { email: 'khalnayak@mks.edu', name: 'Ballu Balram (Owner)', teamName: 'Khalnayak XI' },
-    { email: 'phurtile@mks.edu', name: 'Sheru Khan (Owner)', teamName: 'Phurtile Sher' },
-    { email: 'dhurandar@mks.edu', name: 'Dhurandar Bhargav (Owner)', teamName: 'Dhurandar XI' },
+    { email: 'jebkatre@mks.edu', name: 'Suryansh Patel', teamName: 'Jeb Katre' },
+    { email: 'maqsad@mks.edu', name: 'Mukhtar Ali', teamName: 'Maqsad XI' },
+    { email: 'khalnayak@mks.edu', name: 'Bhanu Pratap', teamName: 'Khalnayak XI' },
+    { email: 'phurtile@mks.edu', name: 'Prabhat Kumar', teamName: 'Phurtile Sher' },
+    { email: 'dhurandar@mks.edu', name: 'Hrishabh', teamName: 'Dhurandar XI' },
+    { email: 'paltan@mks.edu', name: 'Vamsi', teamName: 'Paltan XI' },
   ];
 
   const createdOwners = [];
@@ -115,12 +116,12 @@ export async function seedDatabase(options = { clearExisting: false }) {
     createdOwners.push({ user: owner, teamName: o.teamName });
   }
 
-  // 3. Create Exactly 5 Participating Teams
+  // 3. Create 6 Participating Teams
   const teamTemplates = [
     {
       name: 'Jeb Katre',
       shortCode: 'JBK',
-      captainName: 'Aarav Sharma',
+      captainName: 'Suryansh Patel',
       logoUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#EF4444', // Crimson Red
       secondaryColor: '#991B1B',
@@ -130,7 +131,7 @@ export async function seedDatabase(options = { clearExisting: false }) {
     {
       name: 'Maqsad XI',
       shortCode: 'MQX',
-      captainName: 'Faizan Sheikh',
+      captainName: 'Mukhtar Ali',
       logoUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#10B981', // Emerald Green
       secondaryColor: '#064E3B',
@@ -140,7 +141,7 @@ export async function seedDatabase(options = { clearExisting: false }) {
     {
       name: 'Khalnayak XI',
       shortCode: 'KLX',
-      captainName: 'Kabir Patel',
+      captainName: 'Bhanu Pratap',
       logoUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#8B5CF6', // Royal Purple
       secondaryColor: '#5B21B6',
@@ -150,7 +151,7 @@ export async function seedDatabase(options = { clearExisting: false }) {
     {
       name: 'Phurtile Sher',
       shortCode: 'PHS',
-      captainName: 'Rohan Mehra',
+      captainName: 'Prabhat Kumar',
       logoUrl: 'https://images.unsplash.com/photo-1569517282132-25d22f4573e6?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#F97316', // Tiger Orange
       secondaryColor: '#C2410C',
@@ -160,12 +161,22 @@ export async function seedDatabase(options = { clearExisting: false }) {
     {
       name: 'Dhurandar XI',
       shortCode: 'DHX',
-      captainName: 'Devansh Verma',
+      captainName: 'Hrishabh',
       logoUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=200',
       primaryColor: '#06B6D4', // Cyan
       secondaryColor: '#0E7490',
       initialPurse: 100,
       ownerEmail: 'dhurandar@mks.edu',
+    },
+    {
+      name: 'Paltan XI',
+      shortCode: 'PTX',
+      captainName: 'Vamsi',
+      logoUrl: 'https://images.unsplash.com/photo-1589487391730-58f20eb2c308?auto=format&fit=crop&q=80&w=200',
+      primaryColor: '#F59E0B', // Gold / Amber
+      secondaryColor: '#D97706',
+      initialPurse: 100,
+      ownerEmail: 'paltan@mks.edu',
     },
   ];
 

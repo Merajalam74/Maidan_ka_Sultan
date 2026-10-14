@@ -93,7 +93,7 @@ describe('1. Authentication & Role-Based Access Control', () => {
     const res = await request(app).get('/api/auction/state');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.teams).toHaveLength(5);
+    expect(res.body.teams).toHaveLength(6);
     expect(res.body.tournament).toBeDefined();
   });
 

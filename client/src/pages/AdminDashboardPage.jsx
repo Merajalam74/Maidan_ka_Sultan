@@ -228,7 +228,7 @@ export default function AdminDashboardPage() {
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Tournament configuration, player imports, 6 franchise assignments, and transaction audit desk.
+            Tournament configuration, player imports, franchise assignments, and transaction audit desk.
           </p>
         </div>
 

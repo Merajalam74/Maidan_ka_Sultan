@@ -62,7 +62,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="hidden md:block text-[11px] text-slate-400 font-medium">
-                Official 5-Team Cricket Live Player Auction Platform
+                Official Live Cricket Player Auction Platform
               </p>
             </div>
           </Link>

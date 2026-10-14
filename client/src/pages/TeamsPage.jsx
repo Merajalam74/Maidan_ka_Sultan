@@ -21,14 +21,14 @@ export default function TeamsPage() {
         </p>
       </div>
 
-      {/* 5 Team Cards Grid */}
+      {/* Franchise Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {(teams || []).map((team) => {
           const squad = team.squad || [];
           const purchasedCount = team.purchasedCount ?? squad.length;
           const maxSlots = team.maxSquadSize || 15;
           const minSquad = 11;
-          const minBase = 2;
+          const minBase = 1;
           const remainingPurse = team.remainingPurse ?? team.initialPurse;
           const committedSpent = team.committedSpent ?? 0;
           const safeBid = team.maxSafeBid ?? Math.max(0, remainingPurse - Math.max(0, minSquad - (purchasedCount + 1)) * minBase);

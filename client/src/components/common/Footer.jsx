@@ -62,7 +62,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center justify-between">
                 <span>Currency:</span>
-                <span className="font-bold text-cpl-gold">INR (₹)</span>
+                <span className="font-bold text-cpl-gold">Credits (CR)</span>
               </div>
             </div>
           </div>

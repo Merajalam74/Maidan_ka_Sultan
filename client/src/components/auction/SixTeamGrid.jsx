@@ -26,7 +26,7 @@ export default function SixTeamGrid({ teams, leadingTeamId }) {
 
         // Mathematical squad feasibility calculation (tournament credits)
         const minSquad = 11;
-        const minBase = team.minBasePrice || 2;
+        const minBase = team.minBasePrice || 1;
         const remainingNeededForMin = Math.max(0, minSquad - purchasedCount);
         const minReserveRequired = team.minReserveNeeded ?? (remainingNeededForMin * minBase);
         const safeBid = team.maxSafeBid ?? Math.max(0, remainingPurse - Math.max(0, minSquad - (purchasedCount + 1)) * minBase);

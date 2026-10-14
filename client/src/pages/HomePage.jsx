@@ -86,7 +86,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            The ultimate cricket battleground. Five fierce franchises compete in real-time
+            The ultimate cricket battleground. Fierce franchises compete in real-time
             bidding to construct their championship squads with real-time bidding and strict purse management.
           </p>
 
@@ -105,7 +105,7 @@ export default function HomePage() {
               to="/teams"
               className="px-6 py-4 rounded-xl bg-cpl-surface border border-cpl-border hover:border-cpl-gold text-slate-200 hover:text-white font-bold text-sm tracking-wider uppercase transition-colors"
             >
-              View 5 Franchises
+              View Franchises
             </Link>
           </div>
 
@@ -117,7 +117,7 @@ export default function HomePage() {
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
           <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Registered Players</span>
           <div className="text-3xl font-display font-black text-white mt-1">
-            {summary?.totalPlayers ?? 15}
+            {summary?.totalPlayers ?? 63}
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block">Official Tournament Pool</span>
         </div>
@@ -125,17 +125,17 @@ export default function HomePage() {
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
           <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Players Sold</span>
           <div className="text-3xl font-display font-black text-emerald-400 mt-1">
-            {summary?.soldPlayers ?? 0}
+            {summary?.soldPlayers ?? 6}
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block">
-            {summary?.availablePlayers ?? 15} Available
+            {summary?.availablePlayers ?? 57} Available
           </span>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-cpl-border text-center">
           <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Participating Teams</span>
           <div className="text-3xl font-display font-black text-cpl-gold mt-1">
-            {teams?.length || 5}
+            {teams?.length || 6}
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block">100 Credits Purse Each</span>
         </div>
@@ -149,11 +149,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Five Teams Showcase */}
+      {/* Franchises Showcase */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display font-black text-2xl text-white">The 5 Franchises</h2>
+            <h2 className="font-display font-black text-2xl text-white">The {teams?.length || 6} Franchises</h2>
             <p className="text-xs text-slate-400">Official teams participating in Maidan ke Sultan (Season 5)</p>
           </div>
           <Link to="/teams" className="text-cpl-gold hover:underline text-xs font-bold uppercase tracking-wider flex items-center gap-1">

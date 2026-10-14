@@ -85,7 +85,7 @@ export default function LiveAuctionPage() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-display font-bold text-sm uppercase tracking-wider text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-cpl-gold" />
-                <span>The {teams?.length || 5} Franchises • Purse & Squad Status</span>
+                <span>The {teams?.length || 6} Franchises • Purse & Squad Status</span>
               </h3>
             </div>
             <SixTeamGrid teams={teams} leadingTeamId={session?.leadingTeam} />
