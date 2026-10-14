@@ -42,26 +42,26 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-cpl-dark/95 backdrop-blur-md border-b border-cpl-border/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
-          {/* Logo & Brand */}
-          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-cpl-gold to-cpl-gold-dark p-0.5 shadow-gold shrink-0">
+          {/* Logo & Brand (Clean, un-truncated on all screens) */}
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-cpl-gold to-cpl-gold-dark p-0.5 shadow-gold shrink-0">
               <div className="w-full h-full bg-cpl-dark rounded-[10px] flex items-center justify-center">
-                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-cpl-gold group-hover:scale-110 transition-transform" />
+                <Trophy className="w-5 h-5 text-cpl-gold group-hover:scale-110 transition-transform" />
               </div>
             </div>
-            <div className="min-w-0">
+            <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-display font-extrabold text-sm sm:text-xl tracking-wider text-white truncate">
+                <span className="font-display font-black text-sm sm:text-lg md:text-xl tracking-wider text-white whitespace-nowrap">
                   MAIDAN KE SULTAN
                 </span>
-                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded bg-cpl-gold/15 text-cpl-gold border border-cpl-gold/30 shrink-0">
+                <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded bg-cpl-gold/15 text-cpl-gold border border-cpl-gold/30 shrink-0">
                   S5
                 </span>
               </div>
-              <p className="hidden sm:block text-xs text-slate-400 font-medium truncate">
+              <p className="hidden md:block text-[11px] text-slate-400 font-medium">
                 Official 5-Team Cricket Live Player Auction Platform
               </p>
             </div>
@@ -115,7 +115,7 @@ export default function Navbar() {
               {soundOn ? <Volume2 className="w-4 h-4 text-cpl-gold" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
             </button>
 
-            {/* Role Dedicated Portals (Desktop) */}
+            {/* Role Dedicated Portals (Desktop only) */}
             {isTeamOwner && (
               <Link
                 to="/owner/dashboard"
@@ -137,9 +137,9 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Desktop Auth Button */}
+            {/* Desktop Auth Button (Hidden on mobile, lives inside hamburger on mobile) */}
             {user ? (
-              <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+              <div className="hidden md:flex items-center gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cpl-surface border border-cpl-border">
                   <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cpl-gold to-amber-600 flex items-center justify-center text-xs font-bold text-black uppercase">
                     {user.name.charAt(0)}
@@ -160,10 +160,10 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="gold-gradient-btn px-3 sm:px-4 py-2 rounded-lg text-xs tracking-wider uppercase flex items-center gap-1.5 shadow-md"
+                className="hidden md:flex gold-gradient-btn px-4 py-2 rounded-lg text-xs tracking-wider uppercase items-center gap-1.5 shadow-md font-bold"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span className="font-bold">Sign In</span>
+                <span>Sign In</span>
               </Link>
             )}
 
@@ -257,8 +257,8 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Mobile User Profile & Log Out */}
-          {user && (
+          {/* Mobile User Profile OR Mobile Sign In Button */}
+          {user ? (
             <div className="pt-3 border-t border-cpl-border/60 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cpl-gold to-amber-600 flex items-center justify-center text-xs font-bold text-black uppercase">
@@ -279,6 +279,17 @@ export default function Navbar() {
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Log Out</span>
               </button>
+            </div>
+          ) : (
+            <div className="pt-3 border-t border-cpl-border/60">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full gold-gradient-btn py-3 rounded-xl font-bold text-xs uppercase tracking-wider shadow-gold flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In To Account</span>
+              </Link>
             </div>
           )}
 
