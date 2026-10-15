@@ -82,7 +82,8 @@ export default function HomePage() {
           <h1 className="font-display font-black text-4xl sm:text-6xl lg:text-7xl tracking-tight text-white leading-none">
             {tournament?.name ? tournament.name.split('-')[0].trim() : 'MAIDAN KE SULTAN'}
             <span className="block gold-gradient-text mt-2 font-extrabold text-3xl sm:text-5xl lg:text-6xl">
-              SEASON 5 LIVE AUCTION
+              SEASON 5 
+              <br />LIVE AUCTION
             </span>
           </h1>
 
