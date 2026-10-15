@@ -64,31 +64,34 @@ export const TEAM_HISTORIES = {
     championshipTitles: ['Season 4 Semi-Finalists'],
     yearsWon: [],
     trophyCount: 0,
-    titleBadge: 'Season 4 Semi-Finalists & Top 4 Powerhouse',
-    description: 'The tactical stalwarts of the league and Season 4 semi-finalists. Highly disciplined with deep all-round strength and composed match finishes.',
+    titleBadge: 'Joined Last Year (Season 4 Semi-Finalists)',
+    description: 'Joined the league last year in Season 4 and immediately stamped their authority by storming straight into the Semi-Finals in their debut campaign. Known for calculated tactics, disciplined all-round depth, and composed match finishes.',
     achievements: [
-      'Season 4 Semi-Finalists',
+      'Joined the League Last Year (Season 4)',
+      'Season 4 Semi-Finalists in Debut Campaign',
       'Tournament Fairplay Award Winners (Season 4)',
-      'Best Spin Bowling Average in League History',
-      'Consistent Top 4 Qualification Record',
+      'Tactical Discipline & Top 4 Playoff Pedigree',
     ],
     motto: 'Steadfast Strength & Tactical Masterclass',
   },
   'Paltan XI': {
-    championshipTitles: ['Season 2 Finalists'],
+    championshipTitles: ['Season 5 Debutants'],
     yearsWon: [],
     trophyCount: 0,
-    titleBadge: 'Season 2 Finalists & High-Voltage Brigade',
-    description: 'The passionate brotherhood squad and Season 2 finalists. Celebrated for electric fan support, miracle comebacks, and infectious energy on the field.',
+    titleBadge: 'New Team (Playing This Year - Season 5 Debut)',
+    description: 'A brand-new franchise playing this year only in Season 5. Driven by fearless young talent, high-octane energy, and ambitious goals to make an immediate championship statement in their maiden campaign.',
     achievements: [
-      'Season 2 Finalists (Runners-Up)',
-      'Super-Over Thriller Victors',
-      'Best Catch of the Tournament (Season 2)',
-      'Most Loyal Fan Army Across All 5 Seasons',
+      'New Team (Playing This Year in Season 5)',
+      'Official Tournament Debutants',
+      'High-Voltage Young & Fearless Squad',
+      'Targeting a Historic Maiden Campaign',
     ],
-    motto: 'One Brotherhood, One Roar',
+    motto: 'New Blood, Fearless Ambition',
   },
 };
+
+// Aliases for alternate spellings
+TEAM_HISTORIES['Dhurandhar XI'] = TEAM_HISTORIES['Dhurandar XI'];
 
 export function getTeamHistoryData(teamName) {
   if (!teamName) return null;
@@ -97,5 +100,17 @@ export function getTeamHistoryData(teamName) {
   const foundKey = Object.keys(TEAM_HISTORIES).find(
     (k) => k.toLowerCase() === clean.toLowerCase()
   );
-  return foundKey ? TEAM_HISTORIES[foundKey] : null;
+  if (foundKey) return TEAM_HISTORIES[foundKey];
+
+  // Phonetic/normalized matching
+  const norm = clean.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (norm.includes('dhurand')) return TEAM_HISTORIES['Dhurandar XI'];
+  if (norm.includes('paltan')) return TEAM_HISTORIES['Paltan XI'];
+  if (norm.includes('jeb')) return TEAM_HISTORIES['Jeb Katre'];
+  if (norm.includes('phurtile')) return TEAM_HISTORIES['Phurtile Sher'];
+  if (norm.includes('maqsad')) return TEAM_HISTORIES['Maqsad XI'];
+  if (norm.includes('khalnayak')) return TEAM_HISTORIES['Khalnayak XI'];
+
+  return null;
 }
+

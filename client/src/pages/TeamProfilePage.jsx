@@ -119,9 +119,9 @@ export default function TeamProfilePage() {
   const committedSpent = team.committedSpent ?? 0;
   const safeBid = team.maxSafeBid ?? Math.max(0, remainingPurse - Math.max(0, minSquad - (purchasedCount + 1)));
 
-  const description = team.description || history.description || 'Official competing franchise of Maidan ke Sultan.';
-  const achievements = (team.achievements && team.achievements.length > 0) ? team.achievements : (history.achievements || []);
-  const championshipTitles = (team.championshipTitles && team.championshipTitles.length > 0) ? team.championshipTitles : (history.championshipTitles || []);
+  const description = history.description || team.description || 'Official competing franchise of Maidan ke Sultan.';
+  const achievements = (history.achievements && history.achievements.length > 0) ? history.achievements : (team.achievements || []);
+  const championshipTitles = (history.championshipTitles !== undefined) ? history.championshipTitles : (team.championshipTitles || []);
   const trophyCount = history.trophyCount ?? championshipTitles.length;
   const yearsWon = history.yearsWon || [];
   const motto = history.motto || team.motto || '';
@@ -264,6 +264,11 @@ export default function TeamProfilePage() {
                     <span>{year} Champions</span>
                   </span>
                 ))
+              ) : history.titleBadge ? (
+                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1.5 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-cpl-gold" />
+                  <span>{history.titleBadge}</span>
+                </span>
               ) : championshipTitles.length > 0 ? (
                 championshipTitles.map((title, idx) => (
                   <span

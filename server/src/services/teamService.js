@@ -63,15 +63,15 @@ export async function getTeamsWithDetails(tournamentId) {
       team.ownerUserId?.avatar ||
       `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(team.captainName || team.name)}`;
 
-    // Tournament history, achievements & lore
+    // Tournament history, achievements & lore (authoritative from teamHistory config)
     const historyData = getTeamHistoryData(team.name) || {};
-    const description = team.description || historyData.description || '';
-    const achievements = (team.achievements && team.achievements.length > 0)
-      ? team.achievements
-      : (historyData.achievements || []);
-    const championshipTitles = (team.championshipTitles && team.championshipTitles.length > 0)
-      ? team.championshipTitles
-      : (historyData.championshipTitles || []);
+    const description = historyData.description || team.description || '';
+    const achievements = (historyData.achievements && historyData.achievements.length > 0)
+      ? historyData.achievements
+      : (team.achievements || []);
+    const championshipTitles = (historyData.championshipTitles !== undefined)
+      ? historyData.championshipTitles
+      : (team.championshipTitles || []);
 
     return {
       ...team,
