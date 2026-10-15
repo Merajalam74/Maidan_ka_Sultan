@@ -66,6 +66,19 @@ const teamSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    description: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    achievements: {
+      type: [String],
+      default: [],
+    },
+    championshipTitles: {
+      type: [String],
+      default: [],
+    },
     ownerUserId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

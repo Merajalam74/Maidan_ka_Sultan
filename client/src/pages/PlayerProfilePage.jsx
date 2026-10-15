@@ -409,9 +409,13 @@ export default function PlayerProfilePage() {
               </div>
 
               <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-                <div className="flex items-center gap-4">
+                <Link
+                  to={winningTeam._id ? `/teams/${winningTeam._id}` : '#'}
+                  className="flex items-center gap-4 group"
+                  title="View Franchise Profile"
+                >
                   <div
-                    className="w-16 h-16 rounded-2xl overflow-hidden bg-cpl-dark border-2 p-0.5 shrink-0 shadow-lg flex items-center justify-center"
+                    className="w-16 h-16 rounded-2xl overflow-hidden bg-cpl-dark border-2 p-0.5 shrink-0 shadow-lg flex items-center justify-center group-hover:scale-105 transition-transform"
                     style={{ borderColor: winningTeam.primaryColor || '#F59E0B' }}
                   >
                     {winningTeam.logoUrl ? (
@@ -428,15 +432,16 @@ export default function PlayerProfilePage() {
                   </div>
 
                   <div>
-                    <h3 className="font-display font-black text-xl text-white">
-                      {winningTeam.name}
+                    <h3 className="font-display font-black text-xl text-white group-hover:text-cpl-gold transition-colors flex items-center gap-1.5">
+                      <span>{winningTeam.name}</span>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cpl-gold group-hover:translate-x-0.5 transition-all" />
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
                       Code: <span className="font-mono font-bold text-white">{winningTeam.shortCode}</span>
                       {winningTeam.captainName && ` • Captain: ${winningTeam.captainName}`}
                     </p>
                   </div>
-                </div>
+                </Link>
 
                 <div className="sm:text-right bg-cpl-surface/90 px-4 py-3 rounded-2xl border border-cpl-border shrink-0">
                   <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">

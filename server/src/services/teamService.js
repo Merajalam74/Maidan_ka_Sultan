@@ -1,18 +1,33 @@
 import Team from '../models/Team.js';
 import Purchase from '../models/Purchase.js';
 import User from '../models/User.js';
+import Player from '../models/Player.js';
 import TournamentMembership from '../models/TournamentMembership.js';
+import { getTeamHistoryData } from '../config/teamHistory.js';
 import { ROLES } from '../config/constants.js';
 
 /**
- * Fetch all teams for a tournament with full squad and purse details
+ * Fetch all teams for a tournament with full squad, purse details, and matched captain data
  */
 export async function getTeamsWithDetails(tournamentId) {
-  const teams = await Team.find({ tournamentId, isActive: true })
-    .populate('ownerUserId', 'name email avatar')
-    .lean();
+  const [teams, players] = await Promise.all([
+    Team.find({ tournamentId, isActive: true })
+      .populate('ownerUserId', 'name email avatar')
+      .lean(),
+    Player.find({ tournamentId })
+      .select('name photoUrl role department academicYear phoneNumber externalId stats')
+      .lean(),
+  ]);
 
   const teamIds = teams.map((t) => t._id);
+
+  // Map players by normalized name for fast captain photo and profile resolution
+  const playerMapByName = new Map();
+  players.forEach((p) => {
+    if (p.name) {
+      playerMapByName.set(p.name.trim().toLowerCase(), p);
+    }
+  });
 
   // Fetch all completed purchases for these teams
   const purchases = await Purchase.find({
@@ -40,8 +55,35 @@ export async function getTeamsWithDetails(tournamentId) {
     const minReserveNeeded = slotsNeededAfterCurrent * minBasePrice;
     const maxSafeBid = Math.max(0, remaining - minReserveNeeded);
 
+    // Resolve captain photo and player record
+    const captainKey = team.captainName ? team.captainName.trim().toLowerCase() : '';
+    const captainPlayer = captainKey ? playerMapByName.get(captainKey) : null;
+    const captainPhotoUrl =
+      captainPlayer?.photoUrl ||
+      team.ownerUserId?.avatar ||
+      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(team.captainName || team.name)}`;
+
+    // Tournament history, achievements & lore
+    const historyData = getTeamHistoryData(team.name) || {};
+    const description = team.description || historyData.description || '';
+    const achievements = (team.achievements && team.achievements.length > 0)
+      ? team.achievements
+      : (historyData.achievements || []);
+    const championshipTitles = (team.championshipTitles && team.championshipTitles.length > 0)
+      ? team.championshipTitles
+      : (historyData.championshipTitles || []);
+
     return {
       ...team,
+      description,
+      achievements,
+      championshipTitles,
+      titleBadge: historyData.titleBadge || (championshipTitles[0] || ''),
+      trophyCount: historyData.trophyCount ?? championshipTitles.length,
+      yearsWon: historyData.yearsWon || [],
+      motto: historyData.motto || '',
+      captainPlayer: captainPlayer || null,
+      captainPhotoUrl,
       squad: squad.map((s) => ({
         purchaseId: s._id,
         player: s.playerId,

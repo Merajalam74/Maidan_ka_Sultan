@@ -11,6 +11,7 @@ import Purchase from '../models/Purchase.js';
 import AuctionEvent from '../models/AuctionEvent.js';
 import AuditLog from '../models/AuditLog.js';
 import { ROLES, PLAYER_ROLES, PLAYER_CATEGORIES, AUCTION_STATUS, DEFAULT_CONFIG } from '../config/constants.js';
+import { getTeamHistoryData } from '../config/teamHistory.js';
 import { connectDB, disconnectDB } from '../config/db.js';
 
 dotenv.config();
@@ -183,6 +184,7 @@ export async function seedDatabase(options = { clearExisting: false }) {
   const createdTeams = [];
   for (const t of teamTemplates) {
     const ownerObj = createdOwners.find((o) => o.user.email === t.ownerEmail);
+    const history = getTeamHistoryData(t.name) || {};
     const team = await Team.findOneAndUpdate(
       { tournamentId: tournament._id, name: t.name },
       {
@@ -198,6 +200,9 @@ export async function seedDatabase(options = { clearExisting: false }) {
         committedSpent: 0,
         maxSquadSize: 15,
         isActive: true,
+        description: history.description || '',
+        achievements: history.achievements || [],
+        championshipTitles: history.championshipTitles || [],
         ownerUserId: ownerObj ? ownerObj.user._id : null,
       },
       { upsert: true, new: true }
@@ -457,6 +462,96 @@ export async function seedDatabase(options = { clearExisting: false }) {
       photoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=300',
       stats: { matches: 17, runs: 390, wickets: 16, strikeRate: 134.0, economy: 7.3, highestScore: '52' },
       nominationOrder: 15,
+    },
+    {
+      externalId: 'MKS-CAP01',
+      name: 'Suryansh Patel',
+      phoneNumber: '+91 98765 00001',
+      role: PLAYER_ROLES.BATSMAN,
+      category: PLAYER_CATEGORIES.MARQUEE,
+      department: 'Computer Science & Engg',
+      academicYear: '4th Year',
+      basePrice: 10,
+      battingStyle: 'Right-hand aggressive bat',
+      bowlingStyle: 'Right-arm medium',
+      photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
+      stats: { matches: 32, runs: 1280, wickets: 6, strikeRate: 158.4, economy: 7.9, highestScore: '108*' },
+      nominationOrder: 16,
+    },
+    {
+      externalId: 'MKS-CAP02',
+      name: 'Mukhtar Ali',
+      phoneNumber: '+91 98765 00002',
+      role: PLAYER_ROLES.ALL_ROUNDER,
+      category: PLAYER_CATEGORIES.MARQUEE,
+      department: 'Mechanical Engg',
+      academicYear: '4th Year',
+      basePrice: 10,
+      battingStyle: 'Right-hand bat (Anchor)',
+      bowlingStyle: 'Right-arm fast medium',
+      photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+      stats: { matches: 30, runs: 940, wickets: 34, strikeRate: 145.2, economy: 6.9, highestScore: '92*' },
+      nominationOrder: 17,
+    },
+    {
+      externalId: 'MKS-CAP03',
+      name: 'Bhanu Pratap',
+      phoneNumber: '+91 98765 00003',
+      role: PLAYER_ROLES.BOWLER,
+      category: PLAYER_CATEGORIES.MARQUEE,
+      department: 'Civil Engg',
+      academicYear: '4th Year',
+      basePrice: 10,
+      battingStyle: 'Right-hand bat',
+      bowlingStyle: 'Right-arm express fast (142 kmph)',
+      photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+      stats: { matches: 28, runs: 240, wickets: 52, strikeRate: 115.0, economy: 6.2, bestBowling: '5/14' },
+      nominationOrder: 18,
+    },
+    {
+      externalId: 'MKS-CAP04',
+      name: 'Prabhat Kumar',
+      phoneNumber: '+91 98765 00004',
+      role: PLAYER_ROLES.BATSMAN,
+      category: PLAYER_CATEGORIES.MARQUEE,
+      department: 'Electronics & Comm Engg',
+      academicYear: '4th Year',
+      basePrice: 10,
+      battingStyle: 'Left-hand explosive bat',
+      bowlingStyle: 'Right-arm offbreak',
+      photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+      stats: { matches: 35, runs: 1420, wickets: 12, strikeRate: 162.8, economy: 7.5, highestScore: '116*' },
+      nominationOrder: 19,
+    },
+    {
+      externalId: 'MKS-CAP05',
+      name: 'Hrishabh',
+      phoneNumber: '+91 98765 00005',
+      role: PLAYER_ROLES.ALL_ROUNDER,
+      category: PLAYER_CATEGORIES.MARQUEE,
+      department: 'Information Technology',
+      academicYear: '3rd Year',
+      basePrice: 10,
+      battingStyle: 'Right-hand middle order',
+      bowlingStyle: 'Right-arm mystery spin',
+      photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
+      stats: { matches: 26, runs: 810, wickets: 31, strikeRate: 139.5, economy: 6.5, highestScore: '84' },
+      nominationOrder: 20,
+    },
+    {
+      externalId: 'MKS-CAP06',
+      name: 'Vamsi',
+      phoneNumber: '+91 98765 00006',
+      role: PLAYER_ROLES.WICKET_KEEPER,
+      category: PLAYER_CATEGORIES.MARQUEE,
+      department: 'Electrical & Electronics',
+      academicYear: '3rd Year',
+      basePrice: 10,
+      battingStyle: 'Right-hand finisher',
+      bowlingStyle: 'None',
+      photoUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
+      stats: { matches: 27, runs: 790, wickets: 0, strikeRate: 155.0, economy: 0, highestScore: '78*' },
+      nominationOrder: 21,
     },
   ];
 

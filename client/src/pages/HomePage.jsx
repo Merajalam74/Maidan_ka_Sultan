@@ -18,6 +18,7 @@ import {
 import api from '../services/api';
 import { formatINR, formatINRCompact } from '../utils/formatters';
 import { useAuction } from '../context/AuctionSocketContext';
+import { getTeamHistoryData } from '../utils/teamHistory';
 
 export default function HomePage() {
   const { tournament, session, teams } = useAuction();
@@ -163,56 +164,104 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {(teams || []).map((team) => (
-            <div
-              key={team._id}
-              className="glass-panel glass-panel-hover p-6 rounded-2xl border border-cpl-border relative overflow-hidden"
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-14 h-14 rounded-2xl overflow-hidden bg-cpl-dark border-2 p-0.5 shrink-0"
-                  style={{ borderColor: team.primaryColor || '#F59E0B' }}
-                >
-                  {team.logoUrl ? (
-                    <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover rounded-xl" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center font-black text-cpl-gold">
-                      {team.shortCode}
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-display font-extrabold text-base text-white truncate">
-                    {team.name}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Owner: {team.ownerUserId?.name || 'Assigned Owner'}
-                  </p>
-                  {team.captainName && (
-                    <p className="text-[11px] text-amber-300 font-bold flex items-center gap-1 mt-0.5">
-                      <Crown className="w-3 h-3 text-cpl-gold shrink-0" />
-                      <span>Captain: {team.captainName}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
+          {(teams || []).map((team) => {
+            const history = getTeamHistoryData(team.name) || {};
+            const yearsWon = history.yearsWon || [];
+            const championshipTitles = (team.championshipTitles && team.championshipTitles.length > 0) ? team.championshipTitles : (history.championshipTitles || []);
+            const titleBadge = history.titleBadge || championshipTitles[0] || '';
+            const captainPhotoUrl = team.captainPhotoUrl || team.captainPlayer?.photoUrl || team.ownerUserId?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(team.captainName || team.name)}`;
 
-              <div className="grid grid-cols-2 gap-2 mt-5 pt-4 border-t border-cpl-border/70 text-xs">
+            return (
+              <Link
+                key={team._id}
+                to={`/teams/${team._id}`}
+                className="glass-panel glass-panel-hover p-6 rounded-2xl border border-cpl-border hover:border-cpl-gold/50 relative overflow-hidden flex flex-col justify-between group transition-all"
+              >
                 <div>
-                  <span className="text-slate-500 text-[10px] uppercase font-bold">Remaining Purse</span>
-                  <div className="font-display font-black text-cpl-gold text-sm mt-0.5">
-                    {formatINR(team.remainingPurse)}
+                  {/* Top Trophy Banner */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cpl-dark/80 text-cpl-gold border border-cpl-border">
+                      {team.shortCode}
+                    </span>
+
+                    {yearsWon.length > 0 ? (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md flex items-center gap-1">
+                        <Trophy className="w-3 h-3 fill-black" />
+                        <span>{yearsWon.join(' & ')} Champions</span>
+                      </span>
+                    ) : titleBadge ? (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cpl-surface border border-cpl-border text-slate-300 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-cpl-gold" />
+                        <span className="truncate max-w-[140px]">{titleBadge}</span>
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* Team Identity */}
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-14 h-14 rounded-2xl overflow-hidden bg-cpl-dark border-2 p-0.5 shrink-0 group-hover:scale-105 transition-transform"
+                      style={{ borderColor: team.primaryColor || '#F59E0B' }}
+                    >
+                      {team.logoUrl ? (
+                        <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover rounded-xl" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-black text-cpl-gold">
+                          {team.shortCode}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display font-extrabold text-base text-white group-hover:text-cpl-gold transition-colors truncate flex items-center gap-1">
+                        <span className="truncate">{team.name}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cpl-gold group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </h3>
+                      <p className="text-xs text-slate-400 truncate">
+                        Owner: {team.ownerUserId?.name || 'Assigned Owner'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Captain with Matched Photo */}
+                  <div className="mt-3.5 p-2 rounded-xl bg-cpl-surface/80 border border-cpl-border/60 flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full overflow-hidden bg-cpl-dark border border-cpl-gold/40 shrink-0">
+                      <img
+                        src={captainPhotoUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(team.captainName || team.name)}`;
+                        }}
+                      />
+                    </div>
+                    <div className="truncate text-xs">
+                      <span className="text-[10px] text-amber-300 font-bold flex items-center gap-1 truncate">
+                        <Crown className="w-3 h-3 text-cpl-gold shrink-0" />
+                        <span>Captain: {team.captainName || 'TBA'}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] uppercase font-bold">Players Drafted</span>
-                  <div className="font-bold text-white text-sm mt-0.5">
-                    {team.purchasedCount || (team.squad ? team.squad.length : 0)} / {team.maxSquadSize || 15}
+
+                {/* Financial Purse & Squad Footer */}
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-cpl-border/70 text-xs">
+                  <div>
+                    <span className="text-slate-500 text-[10px] uppercase font-bold">Remaining Purse</span>
+                    <div className="font-display font-black text-cpl-gold text-sm mt-0.5">
+                      {formatINR(team.remainingPurse)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] uppercase font-bold">Players Drafted</span>
+                    <div className="font-bold text-white text-sm mt-0.5">
+                      {team.purchasedCount || (team.squad ? team.squad.length : 0)} / {team.maxSquadSize || 15}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 

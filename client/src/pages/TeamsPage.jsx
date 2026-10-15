@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Users, DollarSign, Award, ChevronDown, ChevronUp, User, Crown, ChevronRight } from 'lucide-react';
+import { Trophy, Users, DollarSign, Award, ChevronDown, ChevronUp, User, Crown, ChevronRight, Sparkles } from 'lucide-react';
 import { useAuction } from '../context/AuctionSocketContext';
 import { formatINR, formatINRCompact, formatDateTime } from '../utils/formatters';
+import { getTeamHistoryData } from '../utils/teamHistory';
 
 export default function TeamsPage() {
   const { teams } = useAuction();
@@ -35,10 +36,17 @@ export default function TeamsPage() {
           const safeBid = team.maxSafeBid ?? Math.max(0, remainingPurse - Math.max(0, minSquad - (purchasedCount + 1)) * minBase);
           const isSelected = selectedTeam?._id === team._id;
 
+          const history = getTeamHistoryData(team.name) || {};
+          const description = team.description || history.description || '';
+          const yearsWon = history.yearsWon || [];
+          const championshipTitles = (team.championshipTitles && team.championshipTitles.length > 0) ? team.championshipTitles : (history.championshipTitles || []);
+          const titleBadge = history.titleBadge || championshipTitles[0] || '';
+          const captainPhotoUrl = team.captainPhotoUrl || team.captainPlayer?.photoUrl || team.ownerUserId?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(team.captainName || team.name)}`;
+
           return (
             <div
               key={team._id}
-              className={`glass-panel rounded-2xl border transition-all overflow-hidden ${
+              className={`glass-panel rounded-2xl border transition-all overflow-hidden flex flex-col justify-between ${
                 isSelected ? 'border-cpl-gold shadow-gold' : 'border-cpl-border hover:border-cpl-gold/40'
               }`}
             >
@@ -49,38 +57,95 @@ export default function TeamsPage() {
                   background: `linear-gradient(135deg, ${team.primaryColor}22 0%, #0D1527 100%)`,
                 }}
               >
+                {/* Top Badge: Short code & Championship Trophy */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cpl-dark/80 text-cpl-gold border border-cpl-border">
+                    {team.shortCode}
+                  </span>
+
+                  {yearsWon.length > 0 ? (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-black shadow-md flex items-center gap-1">
+                      <Trophy className="w-3 h-3 fill-black" />
+                      <span>{yearsWon.join(' & ')} Champions</span>
+                    </span>
+                  ) : titleBadge ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cpl-surface border border-cpl-border text-slate-300 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-cpl-gold" />
+                      <span className="truncate max-w-[150px]">{titleBadge}</span>
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Team Identity */}
                 <div className="flex items-center gap-4">
-                  <div
-                    className="w-16 h-16 rounded-2xl overflow-hidden bg-cpl-dark border-2 flex items-center justify-center p-0.5 shrink-0"
+                  <Link
+                    to={`/teams/${team._id}`}
+                    className="w-16 h-16 rounded-2xl overflow-hidden bg-cpl-dark border-2 flex items-center justify-center p-0.5 shrink-0 hover:scale-105 transition-transform"
                     style={{ borderColor: team.primaryColor || '#F59E0B' }}
+                    title={`View ${team.name} Profile`}
                   >
                     {team.logoUrl ? (
                       <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover rounded-xl" />
                     ) : (
                       <span className="font-display font-black text-lg text-white">{team.shortCode}</span>
                     )}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cpl-dark/80 text-cpl-gold border border-cpl-border">
-                      {team.shortCode}
-                    </span>
-                    <h3 className="font-display font-black text-lg text-white truncate mt-1">
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/teams/${team._id}`}
+                      className="font-display font-black text-lg text-white hover:text-cpl-gold transition-colors block truncate"
+                    >
                       {team.name}
-                    </h3>
-                    <div className="flex flex-col gap-0.5 mt-1 text-xs">
-                      <p className="text-slate-400 truncate">
-                        Owner: <strong className="text-slate-200">{team.ownerUserId?.name || 'Assigned Owner'}</strong>
-                      </p>
-                      <p className="text-amber-300 font-bold flex items-center gap-1">
-                        <Crown className="w-3 h-3 text-cpl-gold shrink-0" />
-                        <span>Captain: {team.captainName || 'Not Announced'}</span>
-                      </p>
-                    </div>
+                    </Link>
+                    <p className="text-slate-400 text-xs truncate mt-0.5">
+                      Owner: <strong className="text-slate-200">{team.ownerUserId?.name || 'Assigned Owner'}</strong>
+                    </p>
                   </div>
                 </div>
 
+                {/* Captain Row with Matched Photo */}
+                <div className="mt-4 p-2.5 rounded-xl bg-cpl-dark/70 border border-cpl-border/70 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl overflow-hidden bg-cpl-dark border border-cpl-gold/50 shrink-0">
+                      <img
+                        src={captainPhotoUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(team.captainName || team.name)}`;
+                        }}
+                      />
+                    </div>
+                    <div className="truncate">
+                      <span className="text-[9px] text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-cpl-gold" />
+                        <span>Team Captain</span>
+                      </span>
+                      <span className="font-bold text-white block truncate text-xs">
+                        {team.captainName || 'Captain TBA'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    to={`/teams/${team._id}`}
+                    className="text-[11px] font-bold text-cpl-gold hover:underline shrink-0 flex items-center gap-0.5"
+                  >
+                    <span>Profile</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                {/* Description Snippet */}
+                {description && (
+                  <p className="text-[11px] text-slate-300/90 line-clamp-2 mt-3 leading-relaxed">
+                    {description}
+                  </p>
+                )}
+
                 {/* Purse Progress Bar */}
-                <div className="mt-5 space-y-1.5">
+                <div className="mt-4 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">Remaining Purse</span>
                     <span className="font-display font-extrabold text-cpl-gold text-sm">
@@ -102,21 +167,32 @@ export default function TeamsPage() {
                 </div>
               </div>
 
-              {/* Quick Stats Bar */}
-              <div className="px-6 py-3 bg-cpl-surface/80 border-t border-b border-cpl-border/60 flex items-center justify-between text-xs">
+              {/* Quick Stats & Action Footer */}
+              <div className="px-5 py-3 bg-cpl-surface/80 border-t border-b border-cpl-border/60 flex items-center justify-between text-xs">
                 <div>
                   <span className="text-slate-500 text-[10px] uppercase font-bold">Roster Size</span>
-                  <div className="font-bold text-white">
+                  <div className="font-bold text-white text-xs">
                     {purchasedCount} / {maxSlots} Players
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedTeam(isSelected ? null : team)}
-                  className="px-3 py-1.5 rounded-lg bg-cpl-dark hover:bg-cpl-border border border-cpl-border text-cpl-gold text-xs font-bold transition-colors flex items-center gap-1"
-                >
-                  <span>{isSelected ? 'Hide Squad' : 'View Squad'}</span>
-                  {isSelected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    to={`/teams/${team._id}`}
+                    className="px-3 py-1.5 rounded-lg gold-gradient-btn text-xs font-bold transition-transform hover:scale-105 flex items-center gap-1"
+                  >
+                    <span>Full Profile</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+
+                  <button
+                    onClick={() => setSelectedTeam(isSelected ? null : team)}
+                    className="px-2.5 py-1.5 rounded-lg bg-cpl-dark hover:bg-cpl-border border border-cpl-border text-slate-300 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1"
+                    title={isSelected ? 'Hide Roster Drawer' : 'View Quick Roster'}
+                  >
+                    {isSelected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
 
               {/* Expandable Squad Drawer */}
