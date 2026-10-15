@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, User, ArrowUpDown, Shield, CheckCircle, Clock, XCircle, Edit2, Trash2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Search, Filter, User, ArrowUpDown, Shield, CheckCircle, Clock, XCircle, Edit2, Trash2, ChevronRight, ExternalLink } from 'lucide-react';
 import api from '../services/api';
 import { formatINR } from '../utils/formatters';
 import { useAuction } from '../context/AuctionSocketContext';
@@ -7,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import PlayerEditModal from '../components/admin/PlayerEditModal';
 
 export default function PlayersPage() {
+  const navigate = useNavigate();
   const { tournament } = useAuction();
   const { isSuperAdmin, isAuctioneer } = useAuth();
   const [players, setPlayers] = useState([]);
@@ -154,7 +156,8 @@ export default function PlayersPage() {
             return (
               <div
                 key={player._id}
-                className="glass-panel glass-panel-hover rounded-2xl border border-cpl-border overflow-hidden flex flex-col justify-between"
+                onClick={() => navigate(`/players/${player._id}`)}
+                className="glass-panel glass-panel-hover rounded-2xl border border-cpl-border overflow-hidden flex flex-col justify-between cursor-pointer group hover:border-cpl-gold/50 transition-all duration-300"
               >
                 <div>
                   {/* Photo & Status Banner */}
@@ -163,7 +166,7 @@ export default function PlayersPage() {
                       <img
                         src={player.photoUrl}
                         alt={player.name}
-                        className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(player.name)}`;
@@ -175,8 +178,16 @@ export default function PlayersPage() {
                       </div>
                     )}
 
+                    {/* View Profile Hover Pill */}
+                    <div className="absolute inset-0 bg-cpl-dark/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none">
+                      <span className="px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-cpl-dark/90 text-cpl-gold border border-cpl-gold/50 backdrop-blur-md shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
+                        <span>View Profile</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+
                     {/* Status Pill */}
-                    <div className="absolute top-2.5 right-2.5">
+                    <div className="absolute top-2.5 right-2.5 z-10">
                       {isSold ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-black shadow-md flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" />
@@ -198,7 +209,7 @@ export default function PlayersPage() {
                     </div>
 
                     {/* Role Pill */}
-                    <div className="absolute bottom-2.5 left-2.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-cpl-dark/85 text-cpl-gold border border-cpl-gold/30 backdrop-blur-sm">
+                    <div className="absolute bottom-2.5 left-2.5 z-10 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-cpl-dark/85 text-cpl-gold border border-cpl-gold/30 backdrop-blur-sm">
                       {player.role}
                     </div>
                   </div>
@@ -212,8 +223,9 @@ export default function PlayersPage() {
                       )}
                     </div>
 
-                    <h3 className="font-display font-extrabold text-base text-white truncate leading-tight">
-                      {player.name}
+                    <h3 className="font-display font-extrabold text-base text-white group-hover:text-cpl-gold transition-colors truncate leading-tight flex items-center justify-between gap-1">
+                      <span className="truncate">{player.name}</span>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cpl-gold group-hover:translate-x-0.5 transition-all shrink-0" />
                     </h3>
                     <p className="text-xs text-slate-400 truncate">{player.department} • {player.academicYear}</p>
                     
@@ -250,7 +262,10 @@ export default function PlayersPage() {
                     <div className="flex items-center gap-1.5 ml-auto pl-2 border-l border-cpl-border/80">
                       <button
                         type="button"
-                        onClick={() => setEditingPlayer(player)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPlayer(player);
+                        }}
                         title="Edit Player Profile"
                         className="p-1.5 rounded-lg bg-cpl-dark hover:bg-cpl-gold/20 text-slate-300 hover:text-cpl-gold border border-cpl-border transition-colors"
                       >
@@ -258,7 +273,10 @@ export default function PlayersPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeletePlayer(player)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePlayer(player);
+                        }}
                         disabled={isSold}
                         title={isSold ? 'Cannot delete SOLD player' : 'Remove Player'}
                         className="p-1.5 rounded-lg bg-cpl-dark hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-cpl-border transition-colors disabled:opacity-30 disabled:hover:bg-cpl-dark disabled:hover:text-slate-400"

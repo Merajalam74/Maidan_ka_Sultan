@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Shield,
   Users,
@@ -16,6 +17,7 @@ import {
   Search,
   RefreshCw,
   Crown,
+  ExternalLink,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -652,7 +654,18 @@ export default function AdminDashboardPage() {
                 {players.map((p) => (
                   <tr key={p._id} className="hover:bg-cpl-surface/50">
                     <td className="p-3 font-mono text-slate-500">{p.externalId || 'N/A'}</td>
-                    <td className="p-3 font-bold text-white">{p.name}</td>
+                    <td className="p-3 font-bold text-white">
+                      <Link
+                        to={`/players/${p._id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-cpl-gold transition-colors inline-flex items-center gap-1.5 group"
+                        title="View Dedicated Profile"
+                      >
+                        <span>{p.name}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-cpl-gold" />
+                      </Link>
+                    </td>
                     <td className="p-3">{p.role}</td>
                     <td className="p-3 font-mono">{formatINR(p.basePrice)}</td>
                     <td className="p-3">{p.department}</td>

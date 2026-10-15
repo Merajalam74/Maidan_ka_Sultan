@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   History,
   Download,
@@ -162,11 +163,16 @@ export default function HistoryPage() {
 
                     return (
                       <tr key={p._id} className={isReversed ? 'opacity-50 bg-red-950/20' : 'hover:bg-cpl-surface/50'}>
-                        <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
-                          {player.photoUrl && (
-                            <img src={player.photoUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
-                          )}
-                          <span>{player.name || 'Unknown'}</span>
+                        <td className="py-3 px-4 font-bold text-white">
+                          <Link
+                            to={player._id ? `/players/${player._id}` : '#'}
+                            className="flex items-center gap-2 hover:text-cpl-gold transition-colors group"
+                          >
+                            {player.photoUrl && (
+                              <img src={player.photoUrl} alt="" className="w-6 h-6 rounded-full object-cover group-hover:scale-110 transition-transform" />
+                            )}
+                            <span className="group-hover:underline">{player.name || 'Unknown'}</span>
+                          </Link>
                         </td>
                         <td className="py-3 px-4">{player.role}</td>
                         <td className="py-3 px-4">{player.department}</td>

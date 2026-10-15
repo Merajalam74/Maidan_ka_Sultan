@@ -234,15 +234,18 @@ export default function HomePage() {
             {recentPurchases.map((purchase) => {
               const player = purchase.playerId || {};
               const team = purchase.winningTeamId || {};
+              const playerProfileUrl = player._id ? `/players/${player._id}` : '#';
+
               return (
-                <div
+                <Link
                   key={purchase._id}
-                  className="glass-panel p-4 rounded-xl border border-cpl-border flex items-center justify-between gap-3"
+                  to={playerProfileUrl}
+                  className="glass-panel glass-panel-hover p-4 rounded-xl border border-cpl-border hover:border-cpl-gold/50 flex items-center justify-between gap-3 group transition-all"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-cpl-dark border border-cpl-border shrink-0">
+                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-cpl-dark border border-cpl-border group-hover:border-cpl-gold/50 shrink-0 transition-colors">
                       {player.photoUrl ? (
-                        <img src={player.photoUrl} alt={player.name} className="w-full h-full object-cover" />
+                        <img src={player.photoUrl} alt={player.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-xs">
                           {player.name?.charAt(0)}
@@ -250,7 +253,10 @@ export default function HomePage() {
                       )}
                     </div>
                     <div className="truncate">
-                      <h4 className="font-bold text-sm text-white truncate">{player.name}</h4>
+                      <h4 className="font-bold text-sm text-white group-hover:text-cpl-gold transition-colors truncate flex items-center gap-1">
+                        <span className="truncate">{player.name}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cpl-gold group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </h4>
                       <span className="text-xs text-emerald-400 font-semibold block truncate">
                         Sold to {team.name}
                       </span>
@@ -265,7 +271,7 @@ export default function HomePage() {
                       Base: {formatINR(player.basePrice)}
                     </span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

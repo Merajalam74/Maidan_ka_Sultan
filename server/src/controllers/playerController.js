@@ -1,5 +1,8 @@
+import mongoose from 'mongoose';
 import Player from '../models/Player.js';
 import Tournament from '../models/Tournament.js';
+import Purchase from '../models/Purchase.js';
+import Bid from '../models/Bid.js';
 import { parseCsvRows, previewPlayerImport, commitPlayerImport, getCompositeKey } from '../services/playerService.js';
 import { fetchGoogleSheetAsCsv } from '../services/googleSheetsService.js';
 import { PLAYER_STATUS } from '../config/constants.js';
@@ -91,14 +94,33 @@ export async function getPlayers(req, res, next) {
  */
 export async function getPlayerById(req, res, next) {
   try {
-    const player = await Player.findById(req.params.id)
-      .populate('winningTeamId', 'name shortCode logoUrl primaryColor');
+    const { id } = req.params;
+    let query = {};
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { _id: id };
+    } else {
+      query = { externalId: id };
+    }
+
+    const player = await Player.findOne(query)
+      .populate('winningTeamId', 'name shortCode logoUrl primaryColor secondaryColor captainName initialPurse remainingPurse');
 
     if (!player) {
       return res.status(404).json({ success: false, message: 'Player not found' });
     }
 
-    return res.json({ success: true, player });
+    const [purchase, bids] = await Promise.all([
+      Purchase.findOne({
+        playerId: player._id,
+        status: 'completed',
+      }).populate('winningTeamId', 'name shortCode logoUrl primaryColor secondaryColor captainName'),
+      Bid.find({ playerId: player._id })
+        .populate('teamId', 'name shortCode logoUrl primaryColor')
+        .sort({ timestamp: -1 })
+        .limit(30),
+    ]);
+
+    return res.json({ success: true, player, purchase, bids });
   } catch (err) {
     next(err);
   }

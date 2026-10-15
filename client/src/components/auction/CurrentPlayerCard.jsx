@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Sparkles, User, Award } from 'lucide-react';
+import { Shield, Sparkles, User, Award, ExternalLink } from 'lucide-react';
 import { formatINR } from '../../utils/formatters';
 
 export default function CurrentPlayerCard({ player, session, leadingTeam }) {
@@ -36,7 +37,13 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
         
         {/* Left: Player Photo & Identity */}
         <div className="lg:col-span-5 flex flex-col items-center text-center">
-          <div className="relative group w-52 h-52 sm:w-60 sm:h-60 rounded-2xl overflow-hidden border-2 border-cpl-gold/40 shadow-stadium bg-cpl-surface">
+          <Link
+            to={`/players/${player._id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open Dedicated Player Profile in New Tab"
+            className="relative group w-52 h-52 sm:w-60 sm:h-60 rounded-2xl overflow-hidden border-2 border-cpl-gold/40 hover:border-cpl-gold shadow-stadium bg-cpl-surface block cursor-pointer transition-all"
+          >
             {player.photoUrl ? (
               <img
                 src={player.photoUrl}
@@ -54,6 +61,14 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
               </div>
             )}
             
+            {/* View Profile Hover Banner */}
+            <div className="absolute inset-0 bg-cpl-dark/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+              <span className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-cpl-dark/90 text-cpl-gold border border-cpl-gold/50 backdrop-blur-md flex items-center gap-1.5">
+                <span>View Profile</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </span>
+            </div>
+
             {/* Category Ribbon */}
             <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-cpl-dark/85 backdrop-blur-md text-cpl-gold border border-cpl-gold/30">
               {player.category || 'Category A'}
@@ -65,7 +80,7 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
                 {player.externalId}
               </div>
             )}
-          </div>
+          </Link>
 
           {/* Academic Dept & Year */}
           <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -100,9 +115,16 @@ export default function CurrentPlayerCard({ player, session, leadingTeam }) {
 
             {/* Player Name & Contact */}
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-display font-extrabold text-2xl sm:text-3xl lg:text-4xl text-white tracking-wide">
-                {player.name}
-              </h2>
+              <Link
+                to={`/players/${player._id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open Dedicated Player Profile in New Tab"
+                className="font-display font-extrabold text-2xl sm:text-3xl lg:text-4xl text-white hover:text-cpl-gold transition-colors tracking-wide flex items-center gap-2 group"
+              >
+                <span>{player.name}</span>
+                <ExternalLink className="w-5 h-5 text-slate-500 group-hover:text-cpl-gold transition-colors" />
+              </Link>
               {player.phoneNumber && (
                 <span className="text-xs font-mono font-medium text-slate-400 bg-cpl-surface/80 px-2.5 py-1 rounded-md border border-cpl-border">
                   📱 {player.phoneNumber}

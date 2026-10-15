@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage';
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import RegisterPlayerPage from './pages/RegisterPlayerPage';
+import PlayerProfilePage from './pages/PlayerProfilePage';
 
 export default function App() {
   return (
@@ -28,6 +29,8 @@ export default function App() {
                 <Route path="/live" element={<LiveAuctionPage />} />
                 <Route path="/teams" element={<TeamsPage />} />
                 <Route path="/players" element={<PlayersPage />} />
+                <Route path="/players/:id" element={<PlayerProfilePage />} />
+                <Route path="/player/:id" element={<PlayerProfilePage />} />
                 <Route path="/register" element={<RegisterPlayerPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/login" element={<LoginPage />} />

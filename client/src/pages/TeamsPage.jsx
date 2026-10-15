@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Trophy, Users, DollarSign, Award, ChevronDown, ChevronUp, User, Crown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Trophy, Users, DollarSign, Award, ChevronDown, ChevronUp, User, Crown, ChevronRight } from 'lucide-react';
 import { useAuction } from '../context/AuctionSocketContext';
 import { formatINR, formatINRCompact, formatDateTime } from '../utils/formatters';
 
@@ -136,14 +137,15 @@ export default function TeamsPage() {
                       {squad.map((item, idx) => {
                         const player = item.player || {};
                         return (
-                          <div
+                          <Link
                             key={idx}
-                            className="p-2.5 rounded-xl bg-cpl-surface border border-cpl-border/60 flex items-center justify-between text-xs"
+                            to={player._id ? `/players/${player._id}` : '#'}
+                            className="p-2.5 rounded-xl bg-cpl-surface border border-cpl-border/60 hover:border-cpl-gold/50 flex items-center justify-between text-xs transition-all group"
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-8 h-8 rounded-lg overflow-hidden bg-cpl-dark border border-cpl-border shrink-0">
+                              <div className="w-8 h-8 rounded-lg overflow-hidden bg-cpl-dark border border-cpl-border group-hover:border-cpl-gold/40 shrink-0 transition-colors">
                                 {player.photoUrl ? (
-                                  <img src={player.photoUrl} alt={player.name} className="w-full h-full object-cover" />
+                                  <img src={player.photoUrl} alt={player.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-slate-500">
                                     <User className="w-4 h-4" />
@@ -151,7 +153,10 @@ export default function TeamsPage() {
                                 )}
                               </div>
                               <div className="truncate">
-                                <span className="font-bold text-white block truncate">{player.name}</span>
+                                <span className="font-bold text-white group-hover:text-cpl-gold transition-colors block truncate flex items-center gap-1">
+                                  <span className="truncate">{player.name}</span>
+                                  <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-cpl-gold group-hover:translate-x-0.5 transition-all shrink-0" />
+                                </span>
                                 <span className="text-[10px] text-slate-400">
                                   {player.role} • {player.department || 'General'}
                                 </span>
@@ -165,7 +170,7 @@ export default function TeamsPage() {
                                 {formatDateTime(item.timestamp)}
                               </span>
                             </div>
-                          </div>
+                          </Link>
                         );
                       })}
                     </div>

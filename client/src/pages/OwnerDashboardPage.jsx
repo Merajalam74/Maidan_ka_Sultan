@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAuction } from '../context/AuctionSocketContext';
 import {
@@ -349,15 +350,20 @@ export default function OwnerDashboardPage() {
                   const p = item.player || {};
                   return (
                     <tr key={idx} className="hover:bg-cpl-surface/50">
-                      <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
-                        {p.photoUrl ? (
-                          <img src={p.photoUrl} alt="" className="w-7 h-7 rounded-lg object-cover" />
-                        ) : (
-                          <div className="w-7 h-7 rounded-lg bg-cpl-dark flex items-center justify-center text-slate-500">
-                            <User className="w-4 h-4" />
-                          </div>
-                        )}
-                        <span>{p.name}</span>
+                      <td className="py-3 px-4 font-bold text-white">
+                        <Link
+                          to={p._id ? `/players/${p._id}` : '#'}
+                          className="flex items-center gap-2.5 hover:text-cpl-gold transition-colors group"
+                        >
+                          {p.photoUrl ? (
+                            <img src={p.photoUrl} alt="" className="w-7 h-7 rounded-lg object-cover group-hover:scale-110 transition-transform" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-lg bg-cpl-dark flex items-center justify-center text-slate-500">
+                              <User className="w-4 h-4" />
+                            </div>
+                          )}
+                          <span className="group-hover:underline">{p.name}</span>
+                        </Link>
                       </td>
                       <td className="py-3 px-4">{p.role}</td>
                       <td className="py-3 px-4">{p.department || 'General'}</td>
